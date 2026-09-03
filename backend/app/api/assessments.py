@@ -5,11 +5,15 @@ from fastapi import (
     Query,
     UploadFile,
 )
+from fastapi.responses import HTMLResponse
 
 from app.services.database_service import (
     get_assessment_by_id,
     get_assessment_count,
     get_assessments,
+)
+from app.services.report_service import (
+    generate_assessment_html,
 )
 from app.services.repository_service import (
     process_repository,
@@ -34,9 +38,6 @@ def list_assessments(
         ge=0,
     ),
 ):
-    """
-    Retrieve stored assessment history.
-    """
     assessments = get_assessments(
         limit=limit,
         offset=offset,
@@ -52,14 +53,35 @@ def list_assessments(
     }
 
 
+@router.get(
+    "/{assessment_id}/report",
+    response_class=HTMLResponse,
+)
+def get_assessment_report(
+    assessment_id: str,
+):
+    html_report = (
+        generate_assessment_html(
+            assessment_id
+        )
+    )
+
+    if html_report is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Assessment not found.",
+        )
+
+    return HTMLResponse(
+        content=html_report,
+        status_code=200,
+    )
+
+
 @router.get("/{assessment_id}")
 def retrieve_assessment(
     assessment_id: str,
 ):
-    """
-    Retrieve one completed assessment and
-    its consolidated security findings.
-    """
     assessment = get_assessment_by_id(
         assessment_id
     )
