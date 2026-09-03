@@ -12,6 +12,9 @@ from fastapi.responses import (
     StreamingResponse,
 )
 
+from app.models.assessment_models import (
+    GitHubAssessmentRequest,
+)
 from app.services.database_service import (
     get_assessment_by_id,
     get_assessment_count,
@@ -24,6 +27,7 @@ from app.services.report_service import (
     generate_assessment_html,
 )
 from app.services.repository_service import (
+    process_github_repository,
     process_repository,
 )
 
@@ -59,6 +63,37 @@ def list_assessments(
         "offset": offset,
         "assessments": assessments,
     }
+
+
+@router.post("/upload")
+async def upload_repository(
+    file: UploadFile = File(...),
+):
+    filename = file.filename or ""
+
+    if not filename.lower().endswith(
+        ".zip"
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Only ZIP repository files "
+                "are allowed."
+            ),
+        )
+
+    return await process_repository(
+        file
+    )
+
+
+@router.post("/github")
+def assess_github_repository(
+    request: GitHubAssessmentRequest,
+):
+    return process_github_repository(
+        request.repository_url
+    )
 
 
 @router.get(
@@ -135,25 +170,3 @@ def retrieve_assessment(
         )
 
     return assessment
-
-
-@router.post("/upload")
-async def upload_repository(
-    file: UploadFile = File(...),
-):
-    filename = file.filename or ""
-
-    if not filename.lower().endswith(
-        ".zip"
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Only ZIP repository files "
-                "are allowed."
-            ),
-        )
-
-    return await process_repository(
-        file
-    )
