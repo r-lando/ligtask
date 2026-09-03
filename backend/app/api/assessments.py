@@ -1,3 +1,5 @@
+from io import BytesIO
+
 from fastapi import (
     APIRouter,
     File,
@@ -5,12 +7,18 @@ from fastapi import (
     Query,
     UploadFile,
 )
-from fastapi.responses import HTMLResponse
+from fastapi.responses import (
+    HTMLResponse,
+    StreamingResponse,
+)
 
 from app.services.database_service import (
     get_assessment_by_id,
     get_assessment_count,
     get_assessments,
+)
+from app.services.pdf_report_service import (
+    generate_assessment_pdf,
 )
 from app.services.report_service import (
     generate_assessment_html,
@@ -54,16 +62,47 @@ def list_assessments(
 
 
 @router.get(
+    "/{assessment_id}/report.pdf",
+)
+def download_assessment_pdf(
+    assessment_id: str,
+):
+    pdf_bytes = generate_assessment_pdf(
+        assessment_id
+    )
+
+    if pdf_bytes is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Assessment not found.",
+        )
+
+    filename = (
+        f"ligtask-assessment-"
+        f"{assessment_id}.pdf"
+    )
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{filename}"'
+            ),
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.get(
     "/{assessment_id}/report",
     response_class=HTMLResponse,
 )
 def get_assessment_report(
     assessment_id: str,
 ):
-    html_report = (
-        generate_assessment_html(
-            assessment_id
-        )
+    html_report = generate_assessment_html(
+        assessment_id
     )
 
     if html_report is None:
@@ -75,6 +114,9 @@ def get_assessment_report(
     return HTMLResponse(
         content=html_report,
         status_code=200,
+        headers={
+            "Cache-Control": "no-store",
+        },
     )
 
 
