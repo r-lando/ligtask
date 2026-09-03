@@ -553,6 +553,240 @@ def get_assessment_count():
     finally:
         connection.close()
 
+def row_to_assessment(row):
+    """
+    Convert an assessment database row into
+    an API-friendly dictionary.
+    """
+    if row is None:
+        return None
+
+    return {
+        "assessment_id": row["id"],
+        "repository_name": (
+            row["repository_name"]
+        ),
+        "input_type": row["input_type"],
+        "status": row["status"],
+        "created_at": row["created_at"],
+        "completed_at": row["completed_at"],
+        "uploaded_size_bytes": (
+            row["uploaded_size_bytes"]
+        ),
+        "extracted_size_bytes": (
+            row["extracted_size_bytes"]
+        ),
+        "total_files": row["total_files"],
+        "processing_time_ms": (
+            row["processing_time_ms"]
+        ),
+        "raw_findings_count": (
+            row["raw_findings_count"]
+        ),
+        "consolidated_findings_count": (
+            row[
+                "consolidated_findings_count"
+            ]
+        ),
+        "severity_summary": {
+            "CRITICAL": (
+                row["critical_count"]
+            ),
+            "HIGH": row["high_count"],
+            "MEDIUM": row["medium_count"],
+            "LOW": row["low_count"],
+            "INFO": row["info_count"],
+            "UNKNOWN": (
+                row["unknown_count"]
+            ),
+        },
+        "correlated_groups": (
+            row["correlated_groups"]
+        ),
+        "duplicate_findings_merged": (
+            row[
+                "duplicate_findings_merged"
+            ]
+        ),
+        "repository_profile": {
+            "total_files": (
+                row["total_files"]
+            ),
+            "languages": (
+                deserialize_json(
+                    row["languages_json"]
+                )
+                or {}
+            ),
+            "dependency_files": (
+                deserialize_json(
+                    row[
+                        "dependency_files_json"
+                    ]
+                )
+                or []
+            ),
+            "configuration_files": (
+                deserialize_json(
+                    row[
+                        "configuration_files_json"
+                    ]
+                )
+                or []
+            ),
+        },
+    }
+
+
+def row_to_finding(row):
+    """
+    Convert a stored consolidated finding into
+    the same general structure used by the
+    assessment pipeline.
+    """
+    return {
+        "id": row["id"],
+        "scanner": row["scanner"],
+        "category": row["category"],
+        "rule_id": row["rule_id"],
+        "title": row["title"],
+        "severity": row["severity"],
+        "cvss_score": row["cvss_score"],
+        "cvss_vector": row["cvss_vector"],
+        "cvss_version": row["cvss_version"],
+        "file": row["file_path"],
+        "line": row["line_number"],
+        "message": row["message"],
+        "package": row["package_name"],
+        "version": row["package_version"],
+        "ecosystem": row["ecosystem"],
+        "correlated": bool(
+            row["correlated"]
+        ),
+        "evidence_count": (
+            row["evidence_count"]
+        ),
+        "sources": (
+            deserialize_json(
+                row["sources_json"]
+            )
+            or []
+        ),
+        "source_rule_ids": (
+            deserialize_json(
+                row[
+                    "source_rule_ids_json"
+                ]
+            )
+            or []
+        ),
+        "description": row["description"],
+        "recommendation": (
+            row["recommendation"]
+        ),
+        "guidance_source": (
+            row["guidance_source"]
+        ),
+    }
+
+
+def get_assessments(
+    limit=50,
+    offset=0,
+):
+    """
+    Retrieve stored assessment history with
+    newest assessments first.
+
+    Findings are not included in the history
+    list to keep the response lightweight.
+    """
+    connection = get_connection()
+
+    try:
+        rows = connection.execute(
+            """
+            SELECT *
+            FROM assessments
+            ORDER BY created_at DESC
+            LIMIT ?
+            OFFSET ?;
+            """,
+            (
+                limit,
+                offset,
+            ),
+        ).fetchall()
+
+        return [
+            row_to_assessment(row)
+            for row in rows
+        ]
+
+    finally:
+        connection.close()
+
+
+def get_assessment_by_id(
+    assessment_id,
+):
+    """
+    Retrieve one stored assessment together
+    with its consolidated findings.
+    """
+    connection = get_connection()
+
+    try:
+        assessment_row = (
+            connection.execute(
+                """
+                SELECT *
+                FROM assessments
+                WHERE id = ?;
+                """,
+                (assessment_id,),
+            ).fetchone()
+        )
+
+        if assessment_row is None:
+            return None
+
+        finding_rows = (
+            connection.execute(
+                """
+                SELECT *
+                FROM findings
+                WHERE assessment_id = ?
+                ORDER BY
+                    CASE severity
+                        WHEN 'CRITICAL' THEN 1
+                        WHEN 'HIGH' THEN 2
+                        WHEN 'MEDIUM' THEN 3
+                        WHEN 'LOW' THEN 4
+                        WHEN 'INFO' THEN 5
+                        ELSE 6
+                    END,
+                    id ASC;
+                """,
+                (assessment_id,),
+            ).fetchall()
+        )
+
+        assessment = (
+            row_to_assessment(
+                assessment_row
+            )
+        )
+
+        assessment["findings"] = [
+            row_to_finding(row)
+            for row in finding_rows
+        ]
+
+        return assessment
+
+    finally:
+        connection.close()
 
 def database_health_check():
     """
