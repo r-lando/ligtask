@@ -47,14 +47,21 @@ def normalize_file_path(raw_path, repository_path: Path):
     if not raw_path:
         return None
 
+    raw_path = Path(raw_path)
+
+    # Secret detector already provides
+    # repository-relative paths.
+    if not raw_path.is_absolute():
+        return str(raw_path).replace("\\", "/")
+
     try:
         relative_path = str(
-            Path(raw_path)
+            raw_path
             .resolve()
             .relative_to(repository_path.resolve())
         )
     except ValueError:
-        relative_path = Path(raw_path).name
+        relative_path = raw_path.name
 
     return relative_path.replace("\\", "/")
 
@@ -172,6 +179,61 @@ def normalize_osv_findings(
         })
 
     return normalized_findings
+
+
+def normalize_secret_findings(
+    secret_results,
+    repository_path: Path
+):
+    """
+    Convert secret-detection findings into
+    Ligtask's common finding format.
+
+    Secret values are intentionally not included.
+    """
+    normalized_findings = []
+
+    for finding in secret_results.get("findings", []):
+        normalized_findings.append({
+            "scanner": "Ligtask Secret Detector",
+            "category": "SECRET",
+
+            "rule_id": finding.get(
+                "rule_id"
+            ),
+
+            "title": (
+                finding.get("title")
+                or "Potential Secret Detected"
+            ),
+
+            "severity": normalize_severity(
+                finding.get("severity")
+            ),
+
+            "cvss_score": None,
+            "cvss_vector": None,
+            "cvss_version": None,
+
+            "file": normalize_file_path(
+                finding.get("file"),
+                repository_path
+            ),
+
+            "line": finding.get("line"),
+
+            "message": finding.get(
+                "message"
+            ),
+
+            "package": None,
+            "version": None,
+            "ecosystem": None,
+        })
+
+    return normalized_findings
+
+
 def create_severity_summary(findings):
     """
     Count normalized findings by severity.

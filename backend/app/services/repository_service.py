@@ -9,9 +9,11 @@ from app.services.dependency_service import scan_dependencies
 from app.services.finding_normalizer import (
     create_severity_summary,
     normalize_osv_findings,
+    normalize_secret_findings,
     normalize_semgrep_findings,
 )
 from app.services.profiler import profile_repository
+from app.services.secret_service import scan_secrets
 from app.services.semgrep_service import run_semgrep
 
 
@@ -21,73 +23,86 @@ MAX_FILE_COUNT = 5000
 
 
 async def process_repository(file: UploadFile):
-    temp_dir = Path(tempfile.mkdtemp(prefix="ligtask_"))
+    temp_dir = Path(
+        tempfile.mkdtemp(prefix="ligtask_")
+    )
 
     try:
         zip_path = temp_dir / "repository.zip"
 
-        # ---------------------------------------------------------
         # 1. Save uploaded ZIP temporarily
-        # ---------------------------------------------------------
         total_uploaded = 0
 
         with zip_path.open("wb") as buffer:
-            while chunk := await file.read(1024 * 1024):
+            while chunk := await file.read(
+                1024 * 1024
+            ):
                 total_uploaded += len(chunk)
 
                 if total_uploaded > MAX_UPLOAD_SIZE:
                     raise HTTPException(
                         status_code=413,
-                        detail="Repository ZIP exceeds the 50 MB upload limit."
+                        detail=(
+                            "Repository ZIP exceeds "
+                            "the 50 MB upload limit."
+                        ),
                     )
 
                 buffer.write(chunk)
 
-        # ---------------------------------------------------------
-        # 2. Verify that the uploaded file is a valid ZIP
-        # ---------------------------------------------------------
+        # 2. Verify valid ZIP
         if not zipfile.is_zipfile(zip_path):
             raise HTTPException(
                 status_code=400,
-                detail="The uploaded file is not a valid ZIP archive."
+                detail=(
+                    "The uploaded file is not a "
+                    "valid ZIP archive."
+                ),
             )
 
-        # ---------------------------------------------------------
-        # 3. Create temporary extraction directory
-        # ---------------------------------------------------------
+        # 3. Create extraction directory
         extract_dir = temp_dir / "repository"
         extract_dir.mkdir()
 
-        # ---------------------------------------------------------
-        # 4. Validate and extract repository
-        # ---------------------------------------------------------
-        with zipfile.ZipFile(zip_path, "r") as archive:
+        # 4. Validate and extract
+        with zipfile.ZipFile(
+            zip_path,
+            "r"
+        ) as archive:
             members = archive.infolist()
 
-            # File-count protection
             if len(members) > MAX_FILE_COUNT:
                 raise HTTPException(
                     status_code=400,
-                    detail="Repository contains too many files."
+                    detail=(
+                        "Repository contains too "
+                        "many files."
+                    ),
                 )
 
-            # Extracted-size protection
             extracted_size = sum(
-                member.file_size for member in members
+                member.file_size
+                for member in members
             )
 
-            if extracted_size > MAX_EXTRACTED_SIZE:
+            if (
+                extracted_size
+                > MAX_EXTRACTED_SIZE
+            ):
                 raise HTTPException(
                     status_code=400,
-                    detail="Extracted repository exceeds the allowed size."
+                    detail=(
+                        "Extracted repository exceeds "
+                        "the allowed size."
+                    ),
                 )
 
-            # Zip Slip / path traversal protection
             root = extract_dir.resolve()
 
             for member in members:
                 destination = (
-                    extract_dir / member.filename
+                    extract_dir
+                    / member.filename
                 ).resolve()
 
                 if (
@@ -96,64 +111,94 @@ async def process_repository(file: UploadFile):
                 ):
                     raise HTTPException(
                         status_code=400,
-                        detail="Unsafe path detected in ZIP archive."
+                        detail=(
+                            "Unsafe path detected "
+                            "in ZIP archive."
+                        ),
                     )
 
             archive.extractall(extract_dir)
 
-        # ---------------------------------------------------------
         # 5. Profile repository
-        # ---------------------------------------------------------
-        profile = profile_repository(extract_dir)
+        profile = profile_repository(
+            extract_dir
+        )
 
-        # ---------------------------------------------------------
         # 6. Run Semgrep SAST
-        # ---------------------------------------------------------
-        semgrep_results = run_semgrep(extract_dir)
-
-        normalized_sast_findings = normalize_semgrep_findings(
-            semgrep_results,
+        semgrep_results = run_semgrep(
             extract_dir
         )
 
-        # ---------------------------------------------------------
-        # 7. Run dependency vulnerability assessment
-        # ---------------------------------------------------------
-        dependency_results = scan_dependencies(
+        normalized_sast_findings = (
+            normalize_semgrep_findings(
+                semgrep_results,
+                extract_dir,
+            )
+        )
+
+        # 7. Dependency assessment
+        dependency_results = (
+            scan_dependencies(
+                extract_dir
+            )
+        )
+
+        normalized_dependency_findings = (
+            normalize_osv_findings(
+                dependency_results,
+                extract_dir,
+            )
+        )
+
+        # 8. Secret detection
+        secret_results = scan_secrets(
             extract_dir
         )
 
-        normalized_dependency_findings = normalize_osv_findings(
-            dependency_results,
-            extract_dir
+        normalized_secret_findings = (
+            normalize_secret_findings(
+                secret_results,
+                extract_dir,
+            )
         )
 
-        # ---------------------------------------------------------
-        # 8. Combine normalized findings
-        # ---------------------------------------------------------
+        # 9. Combine normalized findings
         all_findings = (
             normalized_sast_findings
             + normalized_dependency_findings
-        )
-        severity_summary = create_severity_summary(
-            all_findings
+            + normalized_secret_findings
         )
 
-        # ---------------------------------------------------------
-        # 9. Return consolidated Ligtask assessment
-        # ---------------------------------------------------------
+        # 10. Calculate severity counts
+        severity_summary = (
+            create_severity_summary(
+                all_findings
+            )
+        )
+
+        # 11. Return consolidated assessment
         return {
             "filename": file.filename,
             "status": "processed",
-            "uploaded_size_bytes": total_uploaded,
-            "extracted_size_bytes": extracted_size,
+
+            "uploaded_size_bytes": (
+                total_uploaded
+            ),
+
+            "extracted_size_bytes": (
+                extracted_size
+            ),
 
             "repository_profile": profile,
 
             "security_analysis": {
-                "total_findings": len(all_findings),
+                "total_findings": len(
+                    all_findings
+                ),
 
-                "severity_summary": severity_summary,
+                "severity_summary": (
+                    severity_summary
+                ),
 
                 "findings": all_findings,
 
@@ -161,22 +206,35 @@ async def process_repository(file: UploadFile):
                     "sast_findings": len(
                         normalized_sast_findings
                     ),
+
                     "dependency_findings": len(
                         normalized_dependency_findings
                     ),
-                    "dependencies_checked": dependency_results.get(
-                        "dependencies_checked",
-                        0
+
+                    "secret_findings": len(
+                        normalized_secret_findings
                     ),
-                }
-            }
+
+                    "dependencies_checked": (
+                        dependency_results.get(
+                            "dependencies_checked",
+                            0,
+                        )
+                    ),
+
+                    "secret_files_scanned": (
+                        secret_results.get(
+                            "files_scanned",
+                            0,
+                        )
+                    ),
+                },
+            },
         }
 
     finally:
-        # ---------------------------------------------------------
-        # 10. Delete temporary repository
-        # ---------------------------------------------------------
+        # 12. Delete temporary repository
         shutil.rmtree(
             temp_dir,
-            ignore_errors=True
+            ignore_errors=True,
         )
