@@ -7,6 +7,7 @@ from fastapi import HTTPException, UploadFile
 
 from app.services.dependency_service import scan_dependencies
 from app.services.finding_normalizer import (
+    create_severity_summary,
     normalize_osv_findings,
     normalize_semgrep_findings,
 )
@@ -134,6 +135,9 @@ async def process_repository(file: UploadFile):
             normalized_sast_findings
             + normalized_dependency_findings
         )
+        severity_summary = create_severity_summary(
+            all_findings
+        )
 
         # ---------------------------------------------------------
         # 9. Return consolidated Ligtask assessment
@@ -148,6 +152,8 @@ async def process_repository(file: UploadFile):
 
             "security_analysis": {
                 "total_findings": len(all_findings),
+
+                "severity_summary": severity_summary,
 
                 "findings": all_findings,
 

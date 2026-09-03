@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import httpx
+from cvss import CVSS3, CVSS4
 
 
 OSV_QUERY_URL = "https://api.osv.dev/v1/query"
@@ -71,17 +72,125 @@ def query_osv(
 
         response.raise_for_status()
 
-        return response.json()
-
-    except httpx.HTTPError:
         return {
-            "vulns": []
+            "success": True,
+            "data": response.json(),
+            "error": None,
         }
+
+    except httpx.HTTPError as error:
+        return {
+            "success": False,
+            "data": {
+                "vulns": []
+            },
+            "error": str(error),
+        }
+
+
+def calculate_cvss(cvss_type, vector):
+    """
+    Calculate a CVSS score and severity label
+    from an OSV-provided CVSS vector.
+
+    Returns UNKNOWN if the vector cannot be parsed.
+    """
+
+    if not vector:
+        return {
+            "score": None,
+            "severity": "UNKNOWN",
+            "vector": None,
+            "version": None,
+        }
+
+    try:
+        if cvss_type == "CVSS_V4":
+            cvss = CVSS4(vector)
+
+            score = float(cvss.base_score)
+            severity = str(cvss.severity).upper()
+
+            return {
+                "score": score,
+                "severity": severity,
+                "vector": vector,
+                "version": "4.0",
+            }
+
+        if cvss_type == "CVSS_V3":
+            cvss = CVSS3(vector)
+
+            scores = cvss.scores()
+            severities = cvss.severities()
+
+            return {
+                "score": float(scores[0]),
+                "severity": str(
+                    severities[0]
+                ).upper(),
+                "vector": vector,
+                "version": (
+                    "3.1"
+                    if vector.startswith("CVSS:3.1")
+                    else "3.0"
+                ),
+            }
+
+    except (ValueError, TypeError, IndexError):
+        pass
+
+    return {
+        "score": None,
+        "severity": "UNKNOWN",
+        "vector": vector,
+        "version": None,
+    }
+
+
+def extract_cvss(vulnerability):
+    """
+    Extract the best available CVSS score from
+    an OSV vulnerability record.
+
+    Preference:
+    1. CVSS v4
+    2. CVSS v3
+    """
+
+    severity_entries = vulnerability.get(
+        "severity",
+        []
+    )
+
+    # Prefer CVSS v4 when available
+    for severity_entry in severity_entries:
+        if severity_entry.get("type") == "CVSS_V4":
+            return calculate_cvss(
+                "CVSS_V4",
+                severity_entry.get("score")
+            )
+
+    # Otherwise use CVSS v3
+    for severity_entry in severity_entries:
+        if severity_entry.get("type") == "CVSS_V3":
+            return calculate_cvss(
+                "CVSS_V3",
+                severity_entry.get("score")
+            )
+
+    return {
+        "score": None,
+        "severity": "UNKNOWN",
+        "vector": None,
+        "version": None,
+    }
 
 
 def scan_dependencies(repository_path: Path):
     findings = []
     dependency_count = 0
+    request_errors = []
 
     for package_lock in repository_path.rglob(
         "package-lock.json"
@@ -93,26 +202,82 @@ def scan_dependencies(repository_path: Path):
         dependency_count += len(dependencies)
 
         for dependency in dependencies:
-            result = query_osv(
+            osv_result = query_osv(
                 dependency["name"],
                 dependency["version"],
                 dependency["ecosystem"],
             )
 
-            for vulnerability in result.get("vulns", []):
+            if not osv_result["success"]:
+                request_errors.append({
+                    "package": dependency["name"],
+                    "version": dependency["version"],
+                    "error": osv_result["error"],
+                })
+
+                continue
+
+            vulnerabilities = osv_result[
+                "data"
+            ].get(
+                "vulns",
+                []
+            )
+
+            for vulnerability in vulnerabilities:
+                cvss = extract_cvss(
+                    vulnerability
+                )
+
                 findings.append({
                     "scanner": "OSV",
                     "category": "DEPENDENCY",
-                    "vulnerability_id": vulnerability.get("id"),
+
+                    "vulnerability_id": (
+                        vulnerability.get("id")
+                    ),
+
                     "package": dependency["name"],
                     "version": dependency["version"],
-                    "ecosystem": dependency["ecosystem"],
-                    "summary": vulnerability.get("summary"),
-                    "source_file": dependency["source_file"],
+                    "ecosystem": (
+                        dependency["ecosystem"]
+                    ),
+
+                    "summary": vulnerability.get(
+                        "summary"
+                    ),
+
+                    "source_file": dependency[
+                        "source_file"
+                    ],
+
+                    "severity": cvss[
+                        "severity"
+                    ],
+
+                    "cvss_score": cvss[
+                        "score"
+                    ],
+
+                    "cvss_vector": cvss[
+                        "vector"
+                    ],
+
+                    "cvss_version": cvss[
+                        "version"
+                    ],
                 })
 
     return {
         "dependencies_checked": dependency_count,
         "findings_count": len(findings),
         "findings": findings,
+
+        "scan_status": (
+            "completed_with_errors"
+            if request_errors
+            else "completed"
+        ),
+
+        "request_errors": request_errors,
     }
