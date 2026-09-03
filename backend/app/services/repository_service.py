@@ -14,6 +14,9 @@ from app.services.correlation_service import (
 from app.services.dependency_service import (
     scan_dependencies,
 )
+from app.services.enrichment_service import (
+    enrich_findings,
+)
 from app.services.finding_normalizer import (
     create_severity_summary,
     normalize_config_findings,
@@ -272,14 +275,24 @@ async def process_repository(
             )
         )
 
-        consolidated_severity_summary = (
-            create_severity_summary(
+        # -----------------------------------------
+        # 12. Assessment enrichment
+        # -----------------------------------------
+
+        enriched_findings = (
+            enrich_findings(
                 consolidated_findings
             )
         )
 
+        consolidated_severity_summary = (
+            create_severity_summary(
+                enriched_findings
+            )
+        )
+
         # -----------------------------------------
-        # 12. Return assessment result
+        # 13. Return assessment result
         # -----------------------------------------
 
         return {
@@ -300,7 +313,7 @@ async def process_repository(
             "security_analysis": {
 
                 # -----------------------------
-                # RAW scanner output
+                # Raw scanner evidence
                 # -----------------------------
 
                 "total_findings": len(
@@ -316,13 +329,13 @@ async def process_repository(
                 ),
 
                 # -----------------------------
-                # Consolidated Ligtask output
+                # Consolidated Ligtask analysis
                 # -----------------------------
 
                 "consolidated_analysis": {
 
                     "total_findings": len(
-                        consolidated_findings
+                        enriched_findings
                     ),
 
                     "severity_summary": (
@@ -336,7 +349,7 @@ async def process_repository(
                         )
                     ),
 
-                    "duplicate_findings_removed": (
+                    "duplicate_findings_merged": (
                         correlation_results.get(
                             "duplicate_findings_removed",
                             0,
@@ -344,12 +357,12 @@ async def process_repository(
                     ),
 
                     "findings": (
-                        consolidated_findings
+                        enriched_findings
                     ),
                 },
 
                 # -----------------------------
-                # Scanner statistics
+                # Assessment statistics
                 # -----------------------------
 
                 "summary": {
@@ -396,12 +409,19 @@ async def process_repository(
                     ),
 
                     "consolidated_findings": len(
-                        consolidated_findings
+                        enriched_findings
                     ),
 
                     "correlated_groups": (
                         correlation_results.get(
                             "correlated_groups",
+                            0,
+                        )
+                    ),
+
+                    "duplicate_findings_merged": (
+                        correlation_results.get(
+                            "duplicate_findings_removed",
                             0,
                         )
                     ),
@@ -411,7 +431,7 @@ async def process_repository(
 
     finally:
         # -----------------------------------------
-        # 13. Delete temporary repository
+        # 14. Delete temporary repository
         # -----------------------------------------
 
         shutil.rmtree(
