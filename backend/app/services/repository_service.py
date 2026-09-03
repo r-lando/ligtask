@@ -1,6 +1,9 @@
 import shutil
 import tempfile
+import time
+import uuid
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
@@ -10,6 +13,9 @@ from app.services.config_service import (
 )
 from app.services.correlation_service import (
     correlate_findings,
+)
+from app.services.database_service import (
+    save_assessment,
 )
 from app.services.dependency_service import (
     scan_dependencies,
@@ -40,9 +46,27 @@ MAX_EXTRACTED_SIZE = 200 * 1024 * 1024
 MAX_FILE_COUNT = 5000
 
 
+def utc_now_iso():
+    """
+    Return the current UTC timestamp in
+    ISO 8601 format.
+    """
+    return datetime.now(
+        timezone.utc
+    ).isoformat()
+
+
 async def process_repository(
-    file: UploadFile
+    file: UploadFile,
 ):
+    assessment_id = str(
+        uuid.uuid4()
+    )
+
+    created_at = utc_now_iso()
+
+    start_time = time.perf_counter()
+
     temp_dir = Path(
         tempfile.mkdtemp(
             prefix="ligtask_"
@@ -242,7 +266,7 @@ async def process_repository(
         )
 
         # -----------------------------------------
-        # 10. Combine RAW findings
+        # 10. Combine raw findings
         # -----------------------------------------
 
         raw_findings = (
@@ -259,7 +283,7 @@ async def process_repository(
         )
 
         # -----------------------------------------
-        # 11. Correlation and deduplication
+        # 11. Correlation / deduplication
         # -----------------------------------------
 
         correlation_results = (
@@ -292,13 +316,38 @@ async def process_repository(
         )
 
         # -----------------------------------------
-        # 13. Return assessment result
+        # 13. Complete timing information
         # -----------------------------------------
 
-        return {
-            "filename": file.filename,
+        completed_at = utc_now_iso()
 
-            "status": "processed",
+        processing_time_ms = round(
+            (
+                time.perf_counter()
+                - start_time
+            )
+            * 1000
+        )
+
+        # -----------------------------------------
+        # 14. Prepare SAFE database metadata
+        # -----------------------------------------
+
+        assessment_record = {
+            "id": assessment_id,
+
+            "repository_name": (
+                file.filename
+                or "repository.zip"
+            ),
+
+            "input_type": "ZIP",
+
+            "status": "completed",
+
+            "created_at": created_at,
+
+            "completed_at": completed_at,
 
             "uploaded_size_bytes": (
                 total_uploaded
@@ -308,7 +357,138 @@ async def process_repository(
                 extracted_size
             ),
 
-            "repository_profile": profile,
+            "total_files": profile.get(
+                "total_files",
+                0,
+            ),
+
+            "processing_time_ms": (
+                processing_time_ms
+            ),
+
+            "raw_findings_count": len(
+                raw_findings
+            ),
+
+            "consolidated_findings_count": (
+                len(
+                    enriched_findings
+                )
+            ),
+
+            "critical_count": (
+                consolidated_severity_summary.get(
+                    "CRITICAL",
+                    0,
+                )
+            ),
+
+            "high_count": (
+                consolidated_severity_summary.get(
+                    "HIGH",
+                    0,
+                )
+            ),
+
+            "medium_count": (
+                consolidated_severity_summary.get(
+                    "MEDIUM",
+                    0,
+                )
+            ),
+
+            "low_count": (
+                consolidated_severity_summary.get(
+                    "LOW",
+                    0,
+                )
+            ),
+
+            "info_count": (
+                consolidated_severity_summary.get(
+                    "INFO",
+                    0,
+                )
+            ),
+
+            "unknown_count": (
+                consolidated_severity_summary.get(
+                    "UNKNOWN",
+                    0,
+                )
+            ),
+
+            "correlated_groups": (
+                correlation_results.get(
+                    "correlated_groups",
+                    0,
+                )
+            ),
+
+            "duplicate_findings_merged": (
+                correlation_results.get(
+                    "duplicate_findings_removed",
+                    0,
+                )
+            ),
+
+            "languages": profile.get(
+                "languages",
+                {},
+            ),
+
+            "dependency_files": profile.get(
+                "dependency_files",
+                [],
+            ),
+
+            "configuration_files": profile.get(
+                "configuration_files",
+                [],
+            ),
+        }
+
+        # -----------------------------------------
+        # 15. Store completed assessment
+        # -----------------------------------------
+
+        save_assessment(
+            assessment_record,
+            enriched_findings,
+        )
+
+        # -----------------------------------------
+        # 16. Return assessment result
+        # -----------------------------------------
+
+        return {
+            "assessment_id": (
+                assessment_id
+            ),
+
+            "filename": file.filename,
+
+            "status": "processed",
+
+            "created_at": created_at,
+
+            "completed_at": completed_at,
+
+            "processing_time_ms": (
+                processing_time_ms
+            ),
+
+            "uploaded_size_bytes": (
+                total_uploaded
+            ),
+
+            "extracted_size_bytes": (
+                extracted_size
+            ),
+
+            "repository_profile": (
+                profile
+            ),
 
             "security_analysis": {
 
@@ -431,7 +611,7 @@ async def process_repository(
 
     finally:
         # -----------------------------------------
-        # 14. Delete temporary repository
+        # 17. Delete temporary repository
         # -----------------------------------------
 
         shutil.rmtree(
