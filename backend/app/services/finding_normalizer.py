@@ -39,18 +39,19 @@ def create_title(rule_id):
     return rule_name.replace("-", " ").title()
 
 
-def normalize_file_path(raw_path, repository_path: Path):
+def normalize_file_path(
+    raw_path,
+    repository_path: Path
+):
     """
-    Convert temporary server paths into
-    repository-relative paths.
+    Convert scanner paths into repository-relative
+    paths using forward slashes.
     """
     if not raw_path:
         return None
 
     raw_path = Path(raw_path)
 
-    # Secret detector already provides
-    # repository-relative paths.
     if not raw_path.is_absolute():
         return str(raw_path).replace("\\", "/")
 
@@ -58,7 +59,9 @@ def normalize_file_path(raw_path, repository_path: Path):
         relative_path = str(
             raw_path
             .resolve()
-            .relative_to(repository_path.resolve())
+            .relative_to(
+                repository_path.resolve()
+            )
         )
     except ValueError:
         relative_path = raw_path.name
@@ -76,7 +79,10 @@ def normalize_semgrep_findings(
     """
     normalized_findings = []
 
-    for finding in semgrep_results.get("findings", []):
+    for finding in semgrep_results.get(
+        "findings",
+        []
+    ):
         rule_id = finding.get("rule_id")
 
         normalized_findings.append({
@@ -84,7 +90,9 @@ def normalize_semgrep_findings(
             "category": "SAST",
             "rule_id": rule_id,
 
-            "title": create_title(rule_id),
+            "title": create_title(
+                rule_id
+            ),
 
             "severity": normalize_severity(
                 finding.get("severity")
@@ -96,12 +104,14 @@ def normalize_semgrep_findings(
 
             "file": normalize_file_path(
                 finding.get("file"),
-                repository_path
+                repository_path,
             ),
 
             "line": finding.get("line"),
 
-            "message": finding.get("message"),
+            "message": finding.get(
+                "message"
+            ),
 
             "package": None,
             "version": None,
@@ -116,12 +126,15 @@ def normalize_osv_findings(
     repository_path: Path
 ):
     """
-    Convert OSV dependency vulnerability findings
-    into Ligtask's common finding format.
+    Convert OSV dependency findings into
+    Ligtask's common finding format.
     """
     normalized_findings = []
 
-    for finding in dependency_results.get("findings", []):
+    for finding in dependency_results.get(
+        "findings",
+        []
+    ):
         vulnerability_id = finding.get(
             "vulnerability_id"
         )
@@ -129,10 +142,6 @@ def normalize_osv_findings(
         package = finding.get("package")
         version = finding.get("version")
         summary = finding.get("summary")
-
-        severity = normalize_severity(
-            finding.get("severity")
-        )
 
         normalized_findings.append({
             "scanner": "OSV",
@@ -142,10 +151,15 @@ def normalize_osv_findings(
 
             "title": (
                 summary
-                or f"Vulnerable Dependency: {package}"
+                or (
+                    "Vulnerable Dependency: "
+                    f"{package}"
+                )
             ),
 
-            "severity": severity,
+            "severity": normalize_severity(
+                finding.get("severity")
+            ),
 
             "cvss_score": finding.get(
                 "cvss_score"
@@ -161,14 +175,14 @@ def normalize_osv_findings(
 
             "file": normalize_file_path(
                 finding.get("source_file"),
-                repository_path
+                repository_path,
             ),
 
             "line": None,
 
             "message": (
-                f"{package} {version} is affected by "
-                f"{vulnerability_id}."
+                f"{package} {version} is affected "
+                f"by {vulnerability_id}."
             ),
 
             "package": package,
@@ -186,16 +200,22 @@ def normalize_secret_findings(
     repository_path: Path
 ):
     """
-    Convert secret-detection findings into
-    Ligtask's common finding format.
+    Convert secret findings into Ligtask's
+    common finding format.
 
-    Secret values are intentionally not included.
+    Secret values are never included.
     """
     normalized_findings = []
 
-    for finding in secret_results.get("findings", []):
+    for finding in secret_results.get(
+        "findings",
+        []
+    ):
         normalized_findings.append({
-            "scanner": "Ligtask Secret Detector",
+            "scanner": (
+                "Ligtask Secret Detector"
+            ),
+
             "category": "SECRET",
 
             "rule_id": finding.get(
@@ -217,7 +237,69 @@ def normalize_secret_findings(
 
             "file": normalize_file_path(
                 finding.get("file"),
-                repository_path
+                repository_path,
+            ),
+
+            "line": finding.get("line"),
+
+            "message": finding.get(
+                "message"
+            ),
+
+            "package": None,
+            "version": None,
+            "ecosystem": None,
+        })
+
+    return normalized_findings
+
+
+def normalize_config_findings(
+    config_results,
+    repository_path: Path
+):
+    """
+    Convert configuration-security findings
+    into Ligtask's common finding format.
+    """
+    normalized_findings = []
+
+    for finding in config_results.get(
+        "findings",
+        []
+    ):
+        normalized_findings.append({
+            "scanner": (
+                "Ligtask Config Scanner"
+            ),
+
+            "category": "CONFIGURATION",
+
+            "rule_id": finding.get(
+                "rule_id"
+            ),
+
+            "title": (
+                finding.get("title")
+                or (
+                    "Configuration Security "
+                    "Finding"
+                )
+            ),
+
+            "severity": normalize_severity(
+                finding.get("severity")
+            ),
+
+            # Configuration rules do not
+            # receive fabricated CVSS scores.
+            "cvss_score": None,
+            "cvss_vector": None,
+            "cvss_version": None,
+
+            "file": normalize_file_path(
+                finding.get("file"),
+                repository_path,
             ),
 
             "line": finding.get("line"),
@@ -250,7 +332,7 @@ def create_severity_summary(findings):
     for finding in findings:
         severity = finding.get(
             "severity",
-            "UNKNOWN"
+            "UNKNOWN",
         )
 
         if severity not in summary:
