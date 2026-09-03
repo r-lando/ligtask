@@ -24,3 +24,8 @@ tmp/
 
 # Logs
 *.log
+
+# SQLite database
+*.db
+*.db-shm
+*.db-wal
