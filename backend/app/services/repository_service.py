@@ -1,10 +1,12 @@
 import shutil
 import tempfile
 import zipfile
+
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 from app.services.profiler import profile_repository
-
+from app.services.semgrep_service import run_semgrep
+from app.services.finding_normalizer import normalize_semgrep_findings
 
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024       # 50 MB
 MAX_EXTRACTED_SIZE = 200 * 1024 * 1024  # 200 MB
@@ -78,12 +80,23 @@ async def process_repository(file: UploadFile):
         # Profile repository contents
         profile = profile_repository(extract_dir)
 
+        semgrep_results = run_semgrep(extract_dir)
+
+        normalized_findings = normalize_semgrep_findings(
+            semgrep_results,
+            extract_dir
+        )
+
         return {
             "filename": file.filename,
             "status": "processed",
             "uploaded_size_bytes": total_uploaded,
             "extracted_size_bytes": extracted_size,
-            "repository_profile": profile
+            "repository_profile": profile,
+            "security_analysis": {
+                "total_findings": len(normalized_findings),
+                "findings": normalized_findings
+            }
         }
 
     finally:
