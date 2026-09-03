@@ -1,14 +1,22 @@
 import json
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 from cvss import CVSS3, CVSS4
 
 
-OSV_QUERY_URL = "https://api.osv.dev/v1/query"
+OSV_BATCH_URL = "https://api.osv.dev/v1/querybatch"
+OSV_VULNERABILITY_URL = "https://api.osv.dev/v1/vulns"
+
+REQUEST_TIMEOUT = 20.0
 
 
 def extract_npm_dependencies(package_lock_path: Path):
+    """
+    Extract installed npm package names and versions
+    from package-lock.json.
+    """
     dependencies = []
 
     try:
@@ -50,52 +58,14 @@ def extract_npm_dependencies(package_lock_path: Path):
     return dependencies
 
 
-def query_osv(
-    package_name: str,
-    version: str,
-    ecosystem: str
-):
-    payload = {
-        "package": {
-            "name": package_name,
-            "ecosystem": ecosystem,
-        },
-        "version": version,
-    }
-
-    try:
-        response = httpx.post(
-            OSV_QUERY_URL,
-            json=payload,
-            timeout=10.0,
-        )
-
-        response.raise_for_status()
-
-        return {
-            "success": True,
-            "data": response.json(),
-            "error": None,
-        }
-
-    except httpx.HTTPError as error:
-        return {
-            "success": False,
-            "data": {
-                "vulns": []
-            },
-            "error": str(error),
-        }
-
-
 def calculate_cvss(cvss_type, vector):
     """
-    Calculate a CVSS score and severity label
-    from an OSV-provided CVSS vector.
+    Calculate a CVSS score using an OSV-provided
+    CVSS vector.
 
-    Returns UNKNOWN if the vector cannot be parsed.
+    No score is created when a valid supported
+    vector is unavailable.
     """
-
     if not vector:
         return {
             "score": None,
@@ -108,12 +78,11 @@ def calculate_cvss(cvss_type, vector):
         if cvss_type == "CVSS_V4":
             cvss = CVSS4(vector)
 
-            score = float(cvss.base_score)
-            severity = str(cvss.severity).upper()
-
             return {
-                "score": score,
-                "severity": severity,
+                "score": float(cvss.base_score),
+                "severity": str(
+                    cvss.severity
+                ).upper(),
                 "vector": vector,
                 "version": "4.0",
             }
@@ -150,33 +119,30 @@ def calculate_cvss(cvss_type, vector):
 
 def extract_cvss(vulnerability):
     """
-    Extract the best available CVSS score from
-    an OSV vulnerability record.
+    Extract the preferred CVSS vector from an
+    OSV vulnerability record.
 
     Preference:
     1. CVSS v4
     2. CVSS v3
     """
-
     severity_entries = vulnerability.get(
         "severity",
         []
     )
 
-    # Prefer CVSS v4 when available
-    for severity_entry in severity_entries:
-        if severity_entry.get("type") == "CVSS_V4":
+    for entry in severity_entries:
+        if entry.get("type") == "CVSS_V4":
             return calculate_cvss(
                 "CVSS_V4",
-                severity_entry.get("score")
+                entry.get("score")
             )
 
-    # Otherwise use CVSS v3
-    for severity_entry in severity_entries:
-        if severity_entry.get("type") == "CVSS_V3":
+    for entry in severity_entries:
+        if entry.get("type") == "CVSS_V3":
             return calculate_cvss(
                 "CVSS_V3",
-                severity_entry.get("score")
+                entry.get("score")
             )
 
     return {
@@ -187,64 +153,302 @@ def extract_cvss(vulnerability):
     }
 
 
-def scan_dependencies(repository_path: Path):
-    findings = []
-    dependency_count = 0
-    request_errors = []
+def query_osv_batch(client, dependencies):
+    """
+    Query OSV for multiple dependencies in a
+    single batch request.
+
+    OSV guarantees that result order corresponds
+    to query order.
+    """
+    if not dependencies:
+        return {
+            "success": True,
+            "results": [],
+            "error": None,
+        }
+
+    queries = []
+
+    for dependency in dependencies:
+        queries.append({
+            "package": {
+                "name": dependency["name"],
+                "ecosystem": dependency["ecosystem"],
+            },
+            "version": dependency["version"],
+        })
+
+    try:
+        response = client.post(
+            OSV_BATCH_URL,
+            json={
+                "queries": queries
+            },
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        return {
+            "success": True,
+            "results": data.get(
+                "results",
+                []
+            ),
+            "error": None,
+        }
+
+    except (
+        httpx.HTTPError,
+        ValueError
+    ) as error:
+        return {
+            "success": False,
+            "results": [],
+            "error": str(error),
+        }
+
+
+def get_vulnerability_details(
+    client,
+    vulnerability_id
+):
+    """
+    Retrieve the complete OSV record for a
+    vulnerability ID.
+    """
+    encoded_id = quote(
+        vulnerability_id,
+        safe=""
+    )
+
+    url = (
+        f"{OSV_VULNERABILITY_URL}/"
+        f"{encoded_id}"
+    )
+
+    try:
+        response = client.get(url)
+
+        response.raise_for_status()
+
+        return {
+            "success": True,
+            "data": response.json(),
+            "error": None,
+        }
+
+    except (
+        httpx.HTTPError,
+        ValueError
+    ) as error:
+        return {
+            "success": False,
+            "data": None,
+            "error": str(error),
+        }
+
+
+def collect_dependencies(repository_path: Path):
+    """
+    Collect supported dependencies from the
+    repository.
+    """
+    dependencies = []
 
     for package_lock in repository_path.rglob(
         "package-lock.json"
     ):
-        dependencies = extract_npm_dependencies(
-            package_lock
+        dependencies.extend(
+            extract_npm_dependencies(
+                package_lock
+            )
         )
 
-        dependency_count += len(dependencies)
+    return dependencies
 
-        for dependency in dependencies:
-            osv_result = query_osv(
-                dependency["name"],
-                dependency["version"],
-                dependency["ecosystem"],
+
+def scan_dependencies(repository_path: Path):
+    """
+    Perform dependency vulnerability assessment
+    using OSV batch queries.
+
+    Package/version matching is performed using
+    /v1/querybatch.
+
+    Full vulnerability records are retrieved only
+    once for each unique vulnerability ID.
+    """
+    dependencies = collect_dependencies(
+        repository_path
+    )
+
+    findings = []
+    request_errors = []
+
+    if not dependencies:
+        return {
+            "dependencies_checked": 0,
+            "findings_count": 0,
+            "findings": [],
+            "scan_status": "completed",
+            "request_errors": [],
+        }
+
+    with httpx.Client(
+        timeout=REQUEST_TIMEOUT
+    ) as client:
+
+        batch_result = query_osv_batch(
+            client,
+            dependencies
+        )
+
+        if not batch_result["success"]:
+            return {
+                "dependencies_checked": len(
+                    dependencies
+                ),
+                "findings_count": 0,
+                "findings": [],
+                "scan_status": "failed",
+                "request_errors": [
+                    {
+                        "stage": "batch_query",
+                        "error": batch_result[
+                            "error"
+                        ],
+                    }
+                ],
+            }
+
+        batch_results = batch_result[
+            "results"
+        ]
+
+        if len(batch_results) != len(
+            dependencies
+        ):
+            return {
+                "dependencies_checked": len(
+                    dependencies
+                ),
+                "findings_count": 0,
+                "findings": [],
+                "scan_status": "failed",
+                "request_errors": [
+                    {
+                        "stage": "batch_query",
+                        "error": (
+                            "OSV batch response count "
+                            "did not match the number "
+                            "of dependency queries."
+                        ),
+                    }
+                ],
+            }
+
+        # Maps each vulnerability ID to every
+        # dependency affected by that vulnerability.
+        vulnerability_matches = {}
+
+        for dependency, result in zip(
+            dependencies,
+            batch_results
+        ):
+            for vulnerability in result.get(
+                "vulns",
+                []
+            ):
+                vulnerability_id = (
+                    vulnerability.get("id")
+                )
+
+                if not vulnerability_id:
+                    continue
+
+                vulnerability_matches.setdefault(
+                    vulnerability_id,
+                    []
+                ).append(dependency)
+
+        # Fetch each unique vulnerability record
+        # only once.
+        vulnerability_details = {}
+
+        for vulnerability_id in (
+            vulnerability_matches
+        ):
+            detail_result = (
+                get_vulnerability_details(
+                    client,
+                    vulnerability_id
+                )
             )
 
-            if not osv_result["success"]:
+            if not detail_result["success"]:
                 request_errors.append({
-                    "package": dependency["name"],
-                    "version": dependency["version"],
-                    "error": osv_result["error"],
+                    "stage": (
+                        "vulnerability_details"
+                    ),
+                    "vulnerability_id": (
+                        vulnerability_id
+                    ),
+                    "error": detail_result[
+                        "error"
+                    ],
                 })
 
                 continue
 
-            vulnerabilities = osv_result[
-                "data"
-            ].get(
-                "vulns",
-                []
+            vulnerability_details[
+                vulnerability_id
+            ] = detail_result["data"]
+
+        # Build findings from the full records.
+        for vulnerability_id, matched_dependencies in (
+            vulnerability_matches.items()
+        ):
+            vulnerability = (
+                vulnerability_details.get(
+                    vulnerability_id
+                )
             )
 
-            for vulnerability in vulnerabilities:
-                cvss = extract_cvss(
-                    vulnerability
-                )
+            if vulnerability is None:
+                continue
 
+            cvss = extract_cvss(
+                vulnerability
+            )
+
+            for dependency in matched_dependencies:
                 findings.append({
                     "scanner": "OSV",
                     "category": "DEPENDENCY",
 
                     "vulnerability_id": (
-                        vulnerability.get("id")
+                        vulnerability_id
                     ),
 
-                    "package": dependency["name"],
-                    "version": dependency["version"],
-                    "ecosystem": (
-                        dependency["ecosystem"]
-                    ),
+                    "package": dependency[
+                        "name"
+                    ],
 
-                    "summary": vulnerability.get(
-                        "summary"
+                    "version": dependency[
+                        "version"
+                    ],
+
+                    "ecosystem": dependency[
+                        "ecosystem"
+                    ],
+
+                    "summary": (
+                        vulnerability.get(
+                            "summary"
+                        )
                     ),
 
                     "source_file": dependency[
@@ -269,8 +473,14 @@ def scan_dependencies(repository_path: Path):
                 })
 
     return {
-        "dependencies_checked": dependency_count,
-        "findings_count": len(findings),
+        "dependencies_checked": len(
+            dependencies
+        ),
+
+        "findings_count": len(
+            findings
+        ),
+
         "findings": findings,
 
         "scan_status": (
