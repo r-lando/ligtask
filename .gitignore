@@ -1,0 +1,26 @@
+# Python virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment / secrets
+.env
+.env.*
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary Ligtask files
+ligtask_*/
+temp/
+tmp/
+
+# Logs
+*.log
