@@ -149,6 +149,47 @@ def validate_and_extract_archive(
     return extracted_size
 
 
+def resolve_repository_root(
+    extract_dir,
+):
+    """
+    Return the effective repository root.
+
+    ZIP archives, including GitHub source archives,
+    commonly contain one wrapper directory around the
+    actual repository contents. When the extraction
+    directory contains exactly one top-level directory
+    and no top-level files, treat that directory as the
+    repository root. Otherwise, keep the extraction
+    directory itself as the root.
+    """
+    extract_dir = Path(extract_dir)
+
+    entries = list(
+        extract_dir.iterdir()
+    )
+
+    top_level_directories = [
+        entry
+        for entry in entries
+        if entry.is_dir()
+    ]
+
+    top_level_files = [
+        entry
+        for entry in entries
+        if entry.is_file()
+    ]
+
+    if (
+        len(top_level_directories) == 1
+        and not top_level_files
+    ):
+        return top_level_directories[0]
+
+    return extract_dir
+
+
 def run_assessment_pipeline(
     extract_dir,
 ):
@@ -160,12 +201,16 @@ def run_assessment_pipeline(
     repositories use this same pipeline.
     """
 
+    repository_root = resolve_repository_root(
+        extract_dir
+    )
+
     # -----------------------------------------
     # 1. Repository profiling
     # -----------------------------------------
 
     profile = profile_repository(
-        extract_dir
+        repository_root
     )
 
     # -----------------------------------------
@@ -173,13 +218,13 @@ def run_assessment_pipeline(
     # -----------------------------------------
 
     semgrep_results = run_semgrep(
-        extract_dir
+        repository_root
     )
 
     normalized_sast_findings = (
         normalize_semgrep_findings(
             semgrep_results,
-            extract_dir,
+            repository_root,
         )
     )
 
@@ -189,14 +234,14 @@ def run_assessment_pipeline(
 
     dependency_results = (
         scan_dependencies(
-            extract_dir
+            repository_root
         )
     )
 
     normalized_dependency_findings = (
         normalize_osv_findings(
             dependency_results,
-            extract_dir,
+            repository_root,
         )
     )
 
@@ -205,13 +250,13 @@ def run_assessment_pipeline(
     # -----------------------------------------
 
     secret_results = scan_secrets(
-        extract_dir
+        repository_root
     )
 
     normalized_secret_findings = (
         normalize_secret_findings(
             secret_results,
-            extract_dir,
+            repository_root,
         )
     )
 
@@ -221,14 +266,14 @@ def run_assessment_pipeline(
 
     config_results = (
         scan_configurations(
-            extract_dir
+            repository_root
         )
     )
 
     normalized_config_findings = (
         normalize_config_findings(
             config_results,
-            extract_dir,
+            repository_root,
         )
     )
 
