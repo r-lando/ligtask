@@ -60,6 +60,20 @@ def utc_now_iso():
     ).isoformat()
 
 
+def is_zip_symlink(member):
+    """
+    Return True when a ZIP member represents
+    a symbolic link on Unix-like systems.
+    """
+    unix_mode = (
+        member.external_attr >> 16
+    )
+
+    file_type = unix_mode & 0o170000
+
+    return file_type == 0o120000
+
+
 def validate_and_extract_archive(
     zip_path,
     extract_dir,
@@ -124,6 +138,16 @@ def validate_and_extract_archive(
         root = extract_dir.resolve()
 
         for member in members:
+            if is_zip_symlink(member):
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Symbolic links are not "
+                        "allowed in repository ZIP "
+                        "archives."
+                    ),
+                )
+
             destination = (
                 extract_dir
                 / member.filename
