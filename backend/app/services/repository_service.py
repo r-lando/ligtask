@@ -8,6 +8,9 @@ from fastapi import HTTPException, UploadFile
 from app.services.config_service import (
     scan_configurations,
 )
+from app.services.correlation_service import (
+    correlate_findings,
+)
 from app.services.dependency_service import (
     scan_dependencies,
 )
@@ -48,16 +51,17 @@ async def process_repository(
             temp_dir / "repository.zip"
         )
 
+        # -----------------------------------------
         # 1. Save uploaded ZIP temporarily
+        # -----------------------------------------
+
         total_uploaded = 0
 
         with zip_path.open("wb") as buffer:
             while chunk := await file.read(
                 1024 * 1024
             ):
-                total_uploaded += len(
-                    chunk
-                )
+                total_uploaded += len(chunk)
 
                 if (
                     total_uploaded
@@ -73,7 +77,10 @@ async def process_repository(
 
                 buffer.write(chunk)
 
-        # 2. Verify valid ZIP
+        # -----------------------------------------
+        # 2. Verify ZIP
+        # -----------------------------------------
+
         if not zipfile.is_zipfile(
             zip_path
         ):
@@ -85,13 +92,20 @@ async def process_repository(
                 ),
             )
 
-        # 3. Create extraction directory
+        # -----------------------------------------
+        # 3. Create extraction workspace
+        # -----------------------------------------
+
         extract_dir = (
             temp_dir / "repository"
         )
+
         extract_dir.mkdir()
 
-        # 4. Validate and extract
+        # -----------------------------------------
+        # 4. Validate and extract ZIP
+        # -----------------------------------------
+
         with zipfile.ZipFile(
             zip_path,
             "r",
@@ -152,12 +166,18 @@ async def process_repository(
                 extract_dir
             )
 
-        # 5. Profile repository
+        # -----------------------------------------
+        # 5. Repository profiling
+        # -----------------------------------------
+
         profile = profile_repository(
             extract_dir
         )
 
+        # -----------------------------------------
         # 6. Semgrep SAST
+        # -----------------------------------------
+
         semgrep_results = run_semgrep(
             extract_dir
         )
@@ -169,7 +189,10 @@ async def process_repository(
             )
         )
 
+        # -----------------------------------------
         # 7. Dependency assessment
+        # -----------------------------------------
+
         dependency_results = (
             scan_dependencies(
                 extract_dir
@@ -183,7 +206,10 @@ async def process_repository(
             )
         )
 
+        # -----------------------------------------
         # 8. Secret detection
+        # -----------------------------------------
+
         secret_results = scan_secrets(
             extract_dir
         )
@@ -195,7 +221,10 @@ async def process_repository(
             )
         )
 
+        # -----------------------------------------
         # 9. Configuration assessment
+        # -----------------------------------------
+
         config_results = (
             scan_configurations(
                 extract_dir
@@ -209,22 +238,50 @@ async def process_repository(
             )
         )
 
-        # 10. Consolidate findings
-        all_findings = (
+        # -----------------------------------------
+        # 10. Combine RAW findings
+        # -----------------------------------------
+
+        raw_findings = (
             normalized_sast_findings
             + normalized_dependency_findings
             + normalized_secret_findings
             + normalized_config_findings
         )
 
-        # 11. Severity summary
-        severity_summary = (
+        raw_severity_summary = (
             create_severity_summary(
-                all_findings
+                raw_findings
             )
         )
 
-        # 12. Return assessment
+        # -----------------------------------------
+        # 11. Correlation and deduplication
+        # -----------------------------------------
+
+        correlation_results = (
+            correlate_findings(
+                raw_findings
+            )
+        )
+
+        consolidated_findings = (
+            correlation_results.get(
+                "findings",
+                [],
+            )
+        )
+
+        consolidated_severity_summary = (
+            create_severity_summary(
+                consolidated_findings
+            )
+        )
+
+        # -----------------------------------------
+        # 12. Return assessment result
+        # -----------------------------------------
+
         return {
             "filename": file.filename,
 
@@ -241,19 +298,62 @@ async def process_repository(
             "repository_profile": profile,
 
             "security_analysis": {
+
+                # -----------------------------
+                # RAW scanner output
+                # -----------------------------
+
                 "total_findings": len(
-                    all_findings
+                    raw_findings
                 ),
 
                 "severity_summary": (
-                    severity_summary
+                    raw_severity_summary
                 ),
 
                 "findings": (
-                    all_findings
+                    raw_findings
                 ),
 
+                # -----------------------------
+                # Consolidated Ligtask output
+                # -----------------------------
+
+                "consolidated_analysis": {
+
+                    "total_findings": len(
+                        consolidated_findings
+                    ),
+
+                    "severity_summary": (
+                        consolidated_severity_summary
+                    ),
+
+                    "correlated_groups": (
+                        correlation_results.get(
+                            "correlated_groups",
+                            0,
+                        )
+                    ),
+
+                    "duplicate_findings_removed": (
+                        correlation_results.get(
+                            "duplicate_findings_removed",
+                            0,
+                        )
+                    ),
+
+                    "findings": (
+                        consolidated_findings
+                    ),
+                },
+
+                # -----------------------------
+                # Scanner statistics
+                # -----------------------------
+
                 "summary": {
+
                     "sast_findings": len(
                         normalized_sast_findings
                     ),
@@ -290,12 +390,30 @@ async def process_repository(
                             0,
                         )
                     ),
+
+                    "raw_findings": len(
+                        raw_findings
+                    ),
+
+                    "consolidated_findings": len(
+                        consolidated_findings
+                    ),
+
+                    "correlated_groups": (
+                        correlation_results.get(
+                            "correlated_groups",
+                            0,
+                        )
+                    ),
                 },
             },
         }
 
     finally:
+        # -----------------------------------------
         # 13. Delete temporary repository
+        # -----------------------------------------
+
         shutil.rmtree(
             temp_dir,
             ignore_errors=True,
