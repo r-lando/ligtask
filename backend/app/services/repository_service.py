@@ -4,7 +4,7 @@ import time
 import uuid
 import zipfile
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from fastapi import HTTPException, UploadFile
 
@@ -73,6 +73,28 @@ def is_zip_symlink(member):
 
     return file_type == 0o120000
 
+def is_unsupported_zip_special_file(member):
+    """
+    Return True when a ZIP member explicitly
+    represents an unsupported Unix special file.
+
+    Regular files, directories, and entries without
+    Unix file-type metadata are allowed.
+    """
+    unix_mode = (
+        member.external_attr >> 16
+    )
+
+    file_type = unix_mode & 0o170000
+
+    allowed_file_types = {
+        0,
+        0o040000,  # Directory
+        0o100000,  # Regular file
+    }
+
+    return file_type not in allowed_file_types
+
 
 def validate_and_extract_archive(
     zip_path,
@@ -89,6 +111,8 @@ def validate_and_extract_archive(
     - Absolute path rejection
     - Windows-style path traversal rejection
     - Symbolic link rejection
+    - Encrypted entry rejection
+    - Unsupported special file rejection
     - Per-entry controlled extraction
 
     Returns the total number of bytes actually extracted.
@@ -174,19 +198,19 @@ def validate_and_extract_archive(
                             "in ZIP archive."
                         ),
                     )
-
-                member_path = Path(normalized_name)
-
-                # Reject absolute paths such as:
-                # /etc/passwd
-                if member_path.is_absolute():
+                # Reject encrypted ZIP entries.
+                if member.flag_bits & 0x1:
                     raise HTTPException(
                         status_code=400,
                         detail=(
-                            "Absolute paths are not "
-                            "allowed in ZIP archives."
+                            "Encrypted ZIP entries are not "
+                            "allowed in repository archives."
                         ),
                     )
+
+                member_path = PurePosixPath(
+                    normalized_name
+                )
 
                 # Reject Windows drive-style paths such as:
                 # C:/Windows/file.txt
@@ -199,6 +223,17 @@ def validate_and_extract_archive(
                         status_code=400,
                         detail=(
                             "Drive-qualified paths are not "
+                            "allowed in ZIP archives."
+                        ),
+                    )
+
+                # Reject absolute paths such as:
+                # /etc/passwd
+                if member_path.is_absolute():
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Absolute paths are not "
                             "allowed in ZIP archives."
                         ),
                     )
@@ -221,6 +256,15 @@ def validate_and_extract_archive(
                             "Symbolic links are not "
                             "allowed in repository ZIP "
                             "archives."
+                        ),
+                    )
+                # Reject unsupported Unix special file types.
+                if is_unsupported_zip_special_file(member):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Unsupported special file type "
+                            "detected in ZIP archive."
                         ),
                     )
 
