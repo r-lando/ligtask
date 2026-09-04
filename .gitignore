@@ -41,3 +41,6 @@ evaluation/dependency/ground-truth/*.json
 
 # Dependency evaluation formal artifacts
 evaluation/dependency/results/
+
+# Secret detection formal artifacts
+evaluation/secret/results/
