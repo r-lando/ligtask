@@ -87,6 +87,177 @@ def build_severity_rows(
     return "\n".join(rows)
 
 
+
+def format_mechanism_status(status):
+    """
+    Convert an internal mechanism status into
+    a readable report label.
+    """
+    labels = {
+        "completed": "Completed",
+        "timed_out": "Timed out",
+        "failed": "Failed",
+    }
+
+    return labels.get(
+        status,
+        str(status or "Unknown")
+        .replace("_", " ")
+        .title(),
+    )
+
+
+def build_mechanism_rows(
+    mechanism_statuses,
+):
+    """
+    Build HTML rows for persisted assessment
+    mechanism execution statuses.
+    """
+    labels = {
+        "sast": "SAST",
+        "dependency": "Dependency Assessment",
+        "secret": "Secret Detection",
+        "configuration": "Configuration Assessment",
+    }
+
+    rows = []
+
+    for key in (
+        "sast",
+        "dependency",
+        "secret",
+        "configuration",
+    ):
+        mechanism = mechanism_statuses.get(
+            key
+        )
+
+        if not mechanism:
+            continue
+
+        rows.append(
+            f"""
+            <tr>
+                <td>
+                    {safe_text(
+                        labels.get(
+                            key,
+                            key.replace(
+                                "_",
+                                " ",
+                            ).title(),
+                        )
+                    )}
+                </td>
+
+                <td>
+                    {safe_text(
+                        mechanism.get(
+                            "scanner"
+                        )
+                    )}
+                </td>
+
+                <td>
+                    {safe_text(
+                        format_mechanism_status(
+                            mechanism.get(
+                                "status"
+                            )
+                        )
+                    )}
+                </td>
+
+                <td>
+                    {safe_text(
+                        mechanism.get(
+                            "findings_count",
+                            0,
+                        )
+                    )}
+                </td>
+
+                <td>
+                    {safe_text(
+                        mechanism.get(
+                            "error"
+                        )
+                        or "None"
+                    )}
+                </td>
+            </tr>
+            """
+        )
+
+    return "\n".join(rows)
+
+
+def build_partial_warning(
+    assessment_status,
+):
+    """
+    Return a prominent warning for partial
+    assessments only.
+    """
+    if assessment_status != "partial":
+        return ""
+
+    return """
+    <div class="partial-warning">
+        <strong>Partial Assessment</strong>
+
+        <p>
+            One or more security analysis mechanisms
+            did not complete. Findings from mechanisms
+            that completed remain valid, but this report
+            does not represent a complete repository
+            assessment.
+        </p>
+    </div>
+    """
+
+
+def build_mechanism_section(
+    mechanism_statuses,
+):
+    """
+    Build the mechanism status section when
+    persisted mechanism data is available.
+    """
+    if not mechanism_statuses:
+        return ""
+
+    mechanism_rows = build_mechanism_rows(
+        mechanism_statuses
+    )
+
+    if not mechanism_rows:
+        return ""
+
+    return f"""
+    <h2>
+        Analysis Mechanism Status
+    </h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Mechanism</th>
+                <th>Scanner</th>
+                <th>Status</th>
+                <th>Findings</th>
+                <th>Execution Note</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {mechanism_rows}
+        </tbody>
+    </table>
+    """
+
+
 def build_finding_rows(findings):
     rows = []
 
@@ -353,6 +524,16 @@ def generate_assessment_html(
         {},
     )
 
+    assessment_status = assessment.get(
+        "status",
+        "completed",
+    )
+
+    mechanism_statuses = assessment.get(
+        "mechanism_statuses",
+        {},
+    ) or {}
+
     languages = repository_profile.get(
         "languages",
         {},
@@ -382,6 +563,16 @@ def generate_assessment_html(
     finding_details = (
         build_finding_details(
             findings
+        )
+    )
+
+    partial_warning = build_partial_warning(
+        assessment_status
+    )
+
+    mechanism_section = (
+        build_mechanism_section(
+            mechanism_statuses
         )
     )
 
@@ -463,6 +654,23 @@ def generate_assessment_html(
             border: 1px solid #bbb;
         }}
 
+        .partial-warning {{
+            margin-top: 24px;
+            margin-bottom: 24px;
+            padding: 16px;
+            border: 1px solid #d97706;
+            background: #fff7ed;
+            color: #7c2d12;
+        }}
+
+        .partial-warning strong {{
+            color: #b45309;
+        }}
+
+        .partial-warning p {{
+            margin-bottom: 0;
+        }}
+
         .muted {{
             color: #555;
         }}
@@ -479,6 +687,8 @@ def generate_assessment_html(
         Privacy-Preserving Repository-Aware
         Security Assessment Platform
     </p>
+
+    {partial_warning}
 
     <h2>
         Assessment Information
@@ -563,6 +773,8 @@ def generate_assessment_html(
             </td>
         </tr>
     </table>
+
+    {mechanism_section}
 
     <h2>
         Repository Profile

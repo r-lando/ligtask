@@ -378,6 +378,10 @@ def run_assessment_pipeline(
 
     Both ZIP uploads and public GitHub
     repositories use this same pipeline.
+
+    The pipeline records the execution status
+    of each assessment mechanism so scanner
+    failures are not confused with zero findings.
     """
 
     repository_root = resolve_repository_root(
@@ -407,6 +411,40 @@ def run_assessment_pipeline(
         )
     )
 
+    if semgrep_results.get(
+        "success"
+    ):
+        sast_status = {
+            "status": "completed",
+            "scanner": "Semgrep",
+            "findings_count": len(
+                normalized_sast_findings
+            ),
+            "error": None,
+        }
+
+    elif semgrep_results.get(
+        "timed_out"
+    ):
+        sast_status = {
+            "status": "timed_out",
+            "scanner": "Semgrep",
+            "findings_count": 0,
+            "error": semgrep_results.get(
+                "error"
+            ),
+        }
+
+    else:
+        sast_status = {
+            "status": "failed",
+            "scanner": "Semgrep",
+            "findings_count": 0,
+            "error": semgrep_results.get(
+                "error"
+            ),
+        }
+
     # -----------------------------------------
     # 3. Dependency assessment
     # -----------------------------------------
@@ -424,6 +462,15 @@ def run_assessment_pipeline(
         )
     )
 
+    dependency_status = {
+        "status": "completed",
+        "scanner": "OSV",
+        "findings_count": len(
+            normalized_dependency_findings
+        ),
+        "error": None,
+    }
+
     # -----------------------------------------
     # 4. Secret detection
     # -----------------------------------------
@@ -438,6 +485,15 @@ def run_assessment_pipeline(
             repository_root,
         )
     )
+
+    secret_status = {
+        "status": "completed",
+        "scanner": "Ligtask",
+        "findings_count": len(
+            normalized_secret_findings
+        ),
+        "error": None,
+    }
 
     # -----------------------------------------
     # 5. Configuration assessment
@@ -456,8 +512,40 @@ def run_assessment_pipeline(
         )
     )
 
+    configuration_status = {
+        "status": "completed",
+        "scanner": "Ligtask",
+        "findings_count": len(
+            normalized_config_findings
+        ),
+        "error": None,
+    }
+
     # -----------------------------------------
-    # 6. Combine raw findings
+    # 6. Mechanism execution status
+    # -----------------------------------------
+
+    mechanism_statuses = {
+        "sast": sast_status,
+        "dependency": dependency_status,
+        "secret": secret_status,
+        "configuration": (
+            configuration_status
+        ),
+    }
+
+    assessment_status = "completed"
+
+    if any(
+        mechanism.get("status")
+        != "completed"
+        for mechanism
+        in mechanism_statuses.values()
+    ):
+        assessment_status = "partial"
+
+    # -----------------------------------------
+    # 7. Combine available raw findings
     # -----------------------------------------
 
     raw_findings = (
@@ -474,7 +562,7 @@ def run_assessment_pipeline(
     )
 
     # -----------------------------------------
-    # 7. Correlation / deduplication
+    # 8. Correlation / deduplication
     # -----------------------------------------
 
     correlation_results = (
@@ -491,7 +579,7 @@ def run_assessment_pipeline(
     )
 
     # -----------------------------------------
-    # 8. Assessment enrichment
+    # 9. Assessment enrichment
     # -----------------------------------------
 
     enriched_findings = (
@@ -508,37 +596,57 @@ def run_assessment_pipeline(
 
     return {
         "profile": profile,
+
+        "assessment_status": (
+            assessment_status
+        ),
+
+        "mechanism_statuses": (
+            mechanism_statuses
+        ),
+
         "raw_findings": raw_findings,
+
         "raw_severity_summary": (
             raw_severity_summary
         ),
+
         "enriched_findings": (
             enriched_findings
         ),
+
         "consolidated_severity_summary": (
             consolidated_severity_summary
         ),
+
         "correlation_results": (
             correlation_results
         ),
+
         "normalized_sast_findings": (
             normalized_sast_findings
         ),
+
         "normalized_dependency_findings": (
             normalized_dependency_findings
         ),
+
         "normalized_secret_findings": (
             normalized_secret_findings
         ),
+
         "normalized_config_findings": (
             normalized_config_findings
         ),
+
         "dependency_results": (
             dependency_results
         ),
+
         "secret_results": (
             secret_results
         ),
+
         "config_results": (
             config_results
         ),
@@ -557,8 +665,8 @@ def finalize_assessment(
     pipeline_results,
 ):
     """
-    Persist and return a completed Ligtask
-    assessment using safe assessment data.
+    Persist and return a completed or partial
+    Ligtask assessment using safe assessment data.
     """
     completed_at = utc_now_iso()
 
@@ -644,6 +752,20 @@ def finalize_assessment(
         ]
     )
 
+    assessment_status = (
+        pipeline_results.get(
+            "assessment_status",
+            "completed",
+        )
+    )
+
+    mechanism_statuses = (
+        pipeline_results.get(
+            "mechanism_statuses",
+            {},
+        )
+    )
+
     # -----------------------------------------
     # Prepare SAFE database metadata
     # -----------------------------------------
@@ -657,7 +779,7 @@ def finalize_assessment(
 
         "input_type": input_type,
 
-        "status": "completed",
+        "status": assessment_status,
 
         "created_at": created_at,
 
@@ -760,10 +882,14 @@ def finalize_assessment(
             "configuration_files",
             [],
         ),
+
+        "mechanism_statuses": (
+            mechanism_statuses
+        ),
     }
 
     # -----------------------------------------
-    # Store completed assessment
+    # Store completed or partial assessment
     # -----------------------------------------
 
     save_assessment(
@@ -786,7 +912,7 @@ def finalize_assessment(
 
         "input_type": input_type,
 
-        "status": "processed",
+        "status": assessment_status,
 
         "created_at": created_at,
 
@@ -806,6 +932,10 @@ def finalize_assessment(
 
         "repository_profile": (
             profile
+        ),
+
+        "mechanism_statuses": (
+            mechanism_statuses
         ),
 
         "security_analysis": {

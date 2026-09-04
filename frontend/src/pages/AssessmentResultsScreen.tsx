@@ -80,6 +80,76 @@ function formatDuration(
 }
 
 
+type MechanismStatus = {
+  status: string
+  scanner: string
+  findings_count: number
+  error: string | null
+}
+
+
+type AssessmentWithMechanisms =
+  AssessmentDetail & {
+    mechanism_statuses?: Record<
+      string,
+      MechanismStatus
+    >
+  }
+
+
+const mechanismLabels: Record<
+  string,
+  string
+> = {
+  sast: 'SAST',
+  dependency: 'Dependency',
+  secret: 'Secret Detection',
+  configuration: 'Configuration',
+}
+
+
+function mechanismStatusLabel(
+  status: string,
+) {
+  switch (status) {
+    case 'completed':
+      return 'Completed'
+
+    case 'timed_out':
+      return 'Timed out'
+
+    case 'failed':
+      return 'Failed'
+
+    default:
+      return status
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (character) =>
+          character.toUpperCase(),
+        )
+  }
+}
+
+
+function mechanismStatusColor(
+  status: string,
+) {
+  switch (status) {
+    case 'completed':
+      return '#22c55e'
+
+    case 'timed_out':
+      return '#f59e0b'
+
+    case 'failed':
+      return '#ef4444'
+
+    default:
+      return '#94a3b8'
+  }
+}
+
+
 function SeverityBadge({
   severity,
 }: {
@@ -254,7 +324,7 @@ export default function AssessmentResultsScreen({
             marginBottom: 20,
           }}
         >
-          ← Back to Scan History
+          ΓåÉ Back to Scan History
         </button>
 
         <div
@@ -290,6 +360,33 @@ export default function AssessmentResultsScreen({
   const totalFindings =
     assessment.consolidated_findings_count
 
+  const assessmentWithMechanisms =
+    assessment as AssessmentWithMechanisms
+
+  const mechanismStatuses =
+    assessmentWithMechanisms
+      .mechanism_statuses ?? {}
+
+  const mechanismEntries = [
+    'sast',
+    'dependency',
+    'secret',
+    'configuration',
+  ]
+    .map((key) => ({
+      key,
+      mechanism:
+        mechanismStatuses[key],
+    }))
+    .filter(
+      (
+        entry,
+      ): entry is {
+        key: string
+        mechanism: MechanismStatus
+      } => Boolean(entry.mechanism),
+    )
+
 
   return (
     <div
@@ -319,7 +416,7 @@ export default function AssessmentResultsScreen({
           marginBottom: 20,
         }}
       >
-        ← Back to Scan History
+        ΓåÉ Back to Scan History
       </button>
 
 
@@ -374,7 +471,7 @@ export default function AssessmentResultsScreen({
                 color: '#334155',
               }}
             >
-              •
+              ΓÇó
             </span>
 
             <span
@@ -391,7 +488,7 @@ export default function AssessmentResultsScreen({
                 color: '#334155',
               }}
             >
-              •
+              ΓÇó
             </span>
 
             <span
@@ -466,6 +563,147 @@ export default function AssessmentResultsScreen({
           </button>
         </div>
       </div>
+
+
+      {assessment.status ===
+        'partial' && (
+        <div
+          style={{
+            marginBottom: 20,
+            padding: '16px 18px',
+            borderRadius: 10,
+            border:
+              '1px solid rgba(245,158,11,0.35)',
+            background:
+              'rgba(245,158,11,0.08)',
+          }}
+        >
+          <div
+            style={{
+              color: '#f59e0b',
+              fontSize: 13,
+              fontWeight: 700,
+              marginBottom: 6,
+            }}
+          >
+            Partial Assessment
+          </div>
+
+          <div
+            style={{
+              color: '#cbd5e1',
+              fontSize: 11,
+              lineHeight: 1.6,
+            }}
+          >
+            One or more security analysis
+            mechanisms did not complete.
+            Findings from mechanisms that
+            completed remain valid, but these
+            results do not represent a complete
+            repository assessment.
+          </div>
+        </div>
+      )}
+
+
+      {mechanismEntries.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns:
+              'repeat(4, minmax(0, 1fr))',
+            gap: 10,
+            marginBottom: 24,
+          }}
+        >
+          {mechanismEntries.map(
+            ({ key, mechanism }) => {
+              const statusColor =
+                mechanismStatusColor(
+                  mechanism.status,
+                )
+
+              return (
+                <div
+                  key={key}
+                  style={{
+                    padding: '13px 14px',
+                    borderRadius: 9,
+                    background:
+                      'var(--bg-surface)',
+                    border:
+                      `1px solid ${statusColor}35`,
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent:
+                        'space-between',
+                      gap: 8,
+                      alignItems: 'center',
+                      marginBottom: 7,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: '#cbd5e1',
+                        fontSize: 10,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {mechanismLabels[key] ??
+                        key}
+                    </span>
+
+                    <span
+                      style={{
+                        color: statusColor,
+                        fontSize: 9,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {mechanismStatusLabel(
+                        mechanism.status,
+                      )}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      color: '#64748b',
+                      fontSize: 9,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {mechanism.scanner}
+                    {' · '}
+                    {mechanism.findings_count}{' '}
+                    findings
+                  </div>
+
+                  {mechanism.error && (
+                    <div
+                      style={{
+                        marginTop: 7,
+                        color: '#fbbf24',
+                        fontSize: 9,
+                        lineHeight: 1.45,
+                        overflowWrap:
+                          'anywhere',
+                      }}
+                    >
+                      {mechanism.error}
+                    </div>
+                  )}
+                </div>
+              )
+            },
+          )}
+        </div>
+      )}
 
 
       <div
@@ -978,7 +1216,7 @@ export default function AssessmentResultsScreen({
                             '#334155',
                         }}
                       >
-                        •
+                        ΓÇó
                       </span>
 
                       <span
@@ -1008,7 +1246,7 @@ export default function AssessmentResultsScreen({
                                 '#334155',
                             }}
                           >
-                            •
+                            ΓÇó
                           </span>
 
                           <span
@@ -1035,7 +1273,7 @@ export default function AssessmentResultsScreen({
                                 '#334155',
                             }}
                           >
-                            •
+                            ΓÇó
                           </span>
 
                           <span
@@ -1045,7 +1283,7 @@ export default function AssessmentResultsScreen({
                               fontSize: 9,
                             }}
                           >
-                            Correlated ·{' '}
+                            Correlated ┬╖{' '}
                             {
                               finding.evidence_count
                             }{' '}
@@ -1063,7 +1301,7 @@ export default function AssessmentResultsScreen({
                       paddingTop: 1,
                     }}
                   >
-                    ›
+                    ΓÇ║
                   </span>
                 </div>
               </button>

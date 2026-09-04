@@ -64,6 +64,59 @@ function getSeverityColor(severity: string) {
   }
 }
 
+
+function getAssessmentStatusLabel(status: string) {
+  switch (status) {
+    case 'completed':
+      return 'Completed'
+
+    case 'partial':
+      return 'Partial'
+
+    case 'failed':
+      return 'Failed'
+
+    default:
+      return status
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (character) =>
+          character.toUpperCase(),
+        )
+  }
+}
+
+function getAssessmentStatusColor(status: string) {
+  switch (status) {
+    case 'completed':
+      return '#22c55e'
+
+    case 'partial':
+      return '#f59e0b'
+
+    case 'failed':
+      return '#ef4444'
+
+    default:
+      return '#94a3b8'
+  }
+}
+
+function getAssessmentStatusBackground(status: string) {
+  switch (status) {
+    case 'completed':
+      return 'rgba(34,197,94,0.10)'
+
+    case 'partial':
+      return 'rgba(245,158,11,0.10)'
+
+    case 'failed':
+      return 'rgba(239,68,68,0.10)'
+
+    default:
+      return 'rgba(148,163,184,0.10)'
+  }
+}
+
 export default function HistoryScreen({
   navigate,
   onOpenAssessment,
@@ -145,7 +198,7 @@ export default function HistoryScreen({
               margin: 0,
             }}
           >
-            Review previously completed repository security assessments.
+            Review previous repository security assessments and their completion status.
           </p>
         </div>
 
@@ -270,7 +323,12 @@ export default function HistoryScreen({
                 style={{
                   width: '100%',
                   textAlign: 'left',
-                  border: '1px solid var(--border)',
+                  border:
+                    assessment.status === 'partial'
+                      ? '1px solid rgba(245,158,11,0.28)'
+                      : assessment.status === 'failed'
+                        ? '1px solid rgba(239,68,68,0.28)'
+                        : '1px solid var(--border)',
                   background: 'var(--bg-surface)',
                   borderRadius: 12,
                   padding: '18px 20px',
@@ -326,6 +384,30 @@ export default function HistoryScreen({
                         }}
                       >
                         {assessment.input_type}
+                      </span>
+
+
+                      <span
+                        style={{
+                          padding: '3px 7px',
+                          borderRadius: 999,
+                          background:
+                            getAssessmentStatusBackground(
+                              assessment.status,
+                            ),
+                          color:
+                            getAssessmentStatusColor(
+                              assessment.status,
+                            ),
+                          fontSize: 9,
+                          fontWeight: 700,
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {getAssessmentStatusLabel(
+                          assessment.status,
+                        )}
                       </span>
                     </div>
 
@@ -470,15 +552,16 @@ export default function HistoryScreen({
                     <div
                       style={{
                         color:
-                          assessment.status === 'completed'
-                            ? '#22c55e'
-                            : '#94a3b8',
+                          getAssessmentStatusColor(
+                            assessment.status,
+                          ),
                         fontSize: 13,
                         fontWeight: 600,
-                        textTransform: 'capitalize',
                       }}
                     >
-                      {assessment.status}
+                      {getAssessmentStatusLabel(
+                        assessment.status,
+                      )}
                     </div>
                   </div>
                 </div>

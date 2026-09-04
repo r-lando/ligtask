@@ -184,6 +184,18 @@ def create_styles():
         )
     )
 
+    styles.add(
+        ParagraphStyle(
+            name="PartialWarning",
+            parent=styles["Normal"],
+            fontSize=9,
+            leading=13,
+            textColor=colors.HexColor(
+                "#7C2D12"
+            ),
+        )
+    )
+
     return styles
 
 
@@ -358,6 +370,294 @@ def build_metadata_table(
                     (0, 0),
                     (-1, -1),
                     6,
+                ),
+                (
+                    "TOPPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    5,
+                ),
+                (
+                    "BOTTOMPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    5,
+                ),
+            ]
+        )
+    )
+
+    return table
+
+
+def format_mechanism_status(status):
+    """
+    Convert an internal mechanism status into
+    a readable PDF label.
+    """
+    labels = {
+        "completed": "Completed",
+        "timed_out": "Timed out",
+        "failed": "Failed",
+    }
+
+    return labels.get(
+        status,
+        str(status or "Unknown")
+        .replace("_", " ")
+        .title(),
+    )
+
+
+def build_partial_warning(
+    assessment,
+    styles,
+):
+    """
+    Build a prominent warning for partial
+    assessments only.
+    """
+    if assessment.get("status") != "partial":
+        return None
+
+    warning_text = (
+        "<b>Partial Assessment</b><br/><br/>"
+        "One or more security analysis mechanisms "
+        "did not complete. Findings from mechanisms "
+        "that completed remain valid, but this report "
+        "does not represent a complete repository "
+        "assessment."
+    )
+
+    warning = Table(
+        [
+            [
+                paragraph(
+                    warning_text,
+                    styles["PartialWarning"],
+                    allow_markup=True,
+                )
+            ]
+        ],
+        colWidths=[170 * mm],
+    )
+
+    warning.setStyle(
+        TableStyle(
+            [
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, -1),
+                    colors.HexColor(
+                        "#FFF7ED"
+                    ),
+                ),
+                (
+                    "BOX",
+                    (0, 0),
+                    (-1, -1),
+                    0.7,
+                    colors.HexColor(
+                        "#D97706"
+                    ),
+                ),
+                (
+                    "LEFTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    10,
+                ),
+                (
+                    "RIGHTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    10,
+                ),
+                (
+                    "TOPPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    9,
+                ),
+                (
+                    "BOTTOMPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    9,
+                ),
+            ]
+        )
+    )
+
+    return warning
+
+
+def build_mechanism_status_table(
+    assessment,
+    styles,
+):
+    """
+    Build the persisted mechanism execution
+    status table.
+
+    Returns None for historical assessments
+    that do not contain mechanism statuses.
+    """
+    mechanism_statuses = assessment.get(
+        "mechanism_statuses",
+        {},
+    ) or {}
+
+    if not mechanism_statuses:
+        return None
+
+    labels = {
+        "sast": "SAST",
+        "dependency": "Dependency Assessment",
+        "secret": "Secret Detection",
+        "configuration": "Configuration Assessment",
+    }
+
+    data = [
+        [
+            paragraph(
+                "Mechanism",
+                styles["SmallText"],
+            ),
+            paragraph(
+                "Scanner",
+                styles["SmallText"],
+            ),
+            paragraph(
+                "Status",
+                styles["SmallText"],
+            ),
+            paragraph(
+                "Findings",
+                styles["SmallText"],
+            ),
+            paragraph(
+                "Execution Note",
+                styles["SmallText"],
+            ),
+        ]
+    ]
+
+    for key in (
+        "sast",
+        "dependency",
+        "secret",
+        "configuration",
+    ):
+        mechanism = mechanism_statuses.get(
+            key
+        )
+
+        if not mechanism:
+            continue
+
+        data.append(
+            [
+                paragraph(
+                    labels.get(
+                        key,
+                        key.replace(
+                            "_",
+                            " ",
+                        ).title(),
+                    ),
+                    styles["SmallText"],
+                ),
+                paragraph(
+                    mechanism.get(
+                        "scanner"
+                    ),
+                    styles["SmallText"],
+                ),
+                paragraph(
+                    format_mechanism_status(
+                        mechanism.get(
+                            "status"
+                        )
+                    ),
+                    styles["SmallText"],
+                ),
+                paragraph(
+                    mechanism.get(
+                        "findings_count",
+                        0,
+                    ),
+                    styles["SmallText"],
+                ),
+                paragraph(
+                    mechanism.get(
+                        "error"
+                    )
+                    or "None",
+                    styles["SmallText"],
+                ),
+            ]
+        )
+
+    if len(data) == 1:
+        return None
+
+    table = Table(
+        data,
+        colWidths=[
+            37 * mm,
+            24 * mm,
+            25 * mm,
+            18 * mm,
+            66 * mm,
+        ],
+        repeatRows=1,
+    )
+
+    table.setStyle(
+        TableStyle(
+            [
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#E8E8E8"
+                    ),
+                ),
+                (
+                    "FONTNAME",
+                    (0, 0),
+                    (-1, 0),
+                    "Helvetica-Bold",
+                ),
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.4,
+                    colors.HexColor(
+                        "#CCCCCC"
+                    ),
+                ),
+                (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "TOP",
+                ),
+                (
+                    "LEFTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    5,
+                ),
+                (
+                    "RIGHTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    5,
                 ),
                 (
                     "TOPPADDING",
@@ -1212,6 +1512,23 @@ def generate_assessment_pdf(
         )
     )
 
+    partial_warning = build_partial_warning(
+        assessment,
+        styles,
+    )
+
+    if partial_warning is not None:
+        story.append(
+            partial_warning
+        )
+
+        story.append(
+            Spacer(
+                1,
+                10,
+            )
+        )
+
     story.append(
         paragraph(
             "Assessment Information",
@@ -1234,6 +1551,34 @@ def generate_assessment_pdf(
             10,
         )
     )
+
+    mechanism_status_table = (
+        build_mechanism_status_table(
+            assessment,
+            styles,
+        )
+    )
+
+    if mechanism_status_table is not None:
+        story.append(
+            paragraph(
+                "Analysis Mechanism Status",
+                styles[
+                    "SectionHeading"
+                ],
+            )
+        )
+
+        story.append(
+            mechanism_status_table
+        )
+
+        story.append(
+            Spacer(
+                1,
+                10,
+            )
+        )
 
     story.append(
         paragraph(

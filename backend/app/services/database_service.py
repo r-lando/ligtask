@@ -110,7 +110,9 @@ def initialize_database():
 
                 dependency_files_json TEXT,
 
-                configuration_files_json TEXT
+                configuration_files_json TEXT,
+
+                mechanism_statuses_json TEXT
             );
             """
         )
@@ -207,6 +209,30 @@ def initialize_database():
             """
         )
 
+        # -------------------------------------
+        # Backward-compatible schema migrations
+        # -------------------------------------
+
+        assessment_columns = {
+            row["name"]
+            for row in cursor.execute(
+                """
+                PRAGMA table_info(assessments);
+                """
+            ).fetchall()
+        }
+
+        if (
+            "mechanism_statuses_json"
+            not in assessment_columns
+        ):
+            cursor.execute(
+                """
+                ALTER TABLE assessments
+                ADD COLUMN mechanism_statuses_json TEXT;
+                """
+            )
+
         connection.commit()
 
     finally:
@@ -247,8 +273,8 @@ def save_assessment(
     findings,
 ):
     """
-    Store one completed assessment and its
-    consolidated findings.
+    Store one completed or partial assessment
+    and its consolidated findings.
 
     Raw repository contents and detected
     secret values must never be passed to
@@ -291,9 +317,11 @@ def save_assessment(
                 duplicate_findings_merged,
                 languages_json,
                 dependency_files_json,
-                configuration_files_json
+                configuration_files_json,
+                mechanism_statuses_json
             )
             VALUES (
+                ?,
                 ?,
                 ?,
                 ?,
@@ -399,6 +427,11 @@ def save_assessment(
                 serialize_json(
                     assessment.get(
                         "configuration_files"
+                    )
+                ),
+                serialize_json(
+                    assessment.get(
+                        "mechanism_statuses"
                     )
                 ),
             ),
@@ -607,6 +640,12 @@ def row_to_assessment(row):
             row[
                 "duplicate_findings_merged"
             ]
+        ),
+        "mechanism_statuses": (
+            deserialize_json(
+                row["mechanism_statuses_json"]
+            )
+            or {}
         ),
         "repository_profile": {
             "total_files": (
