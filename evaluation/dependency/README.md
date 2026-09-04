@@ -1,0 +1,299 @@
+\# Controlled Dependency Vulnerability Evaluation
+
+
+
+\## Purpose
+
+
+
+This evaluation measures the dependency vulnerability
+
+assessment mechanism implemented in Ligtask. It is separate
+
+from the controlled SAST evaluation performed using the
+
+OWASP Benchmark.
+
+
+
+The evaluation is limited to dependency functionality that
+
+is currently implemented in Ligtask.
+
+
+
+\## Evaluation Scope
+
+
+
+The dependency assessment pipeline evaluated here is:
+
+
+
+package-lock.json
+
+\-> npm package and exact-version extraction
+
+\-> OSV package/version query
+
+\-> vulnerability matching
+
+\-> Ligtask dependency finding
+
+
+
+Only the npm ecosystem is included in this evaluation.
+
+
+
+Python, Maven, Gradle, Composer, and other dependency
+
+ecosystems are outside the current evaluation scope because
+
+Ligtask does not currently implement dependency extraction
+
+for those ecosystems.
+
+
+
+\## Evaluation Unit
+
+
+
+The primary evaluation unit is a controlled npm
+
+package/version case.
+
+
+
+Each case contains:
+
+
+
+\- a package name;
+
+\- an exact package version;
+
+\- an expected vulnerability state;
+
+\- the OSV vulnerability identifiers applicable to that
+
+&#x20; package/version at the time the ground truth is frozen; and
+
+\- a package-lock.json fixture processed by Ligtask.
+
+
+
+A vulnerable case is considered detected when Ligtask
+
+reports at least one OSV vulnerability identifier that
+
+belongs to the frozen expected OSV identifier set for that
+
+package/version.
+
+
+
+A vulnerable case is considered missed when none of its
+
+expected OSV vulnerability identifiers is reported.
+
+
+
+A non-vulnerable control passes when Ligtask reports no OSV
+
+vulnerability for the package/version according to the
+
+frozen ground truth.
+
+
+
+Any vulnerability identifier returned by Ligtask that is
+
+not contained in the frozen expected set will be recorded
+
+separately and reviewed against the preserved ground-truth
+
+snapshot. It will not automatically be classified as a
+
+false positive without verification.
+
+
+
+\## Ground-Truth Procedure
+
+
+
+Ground truth will be established before the formal Ligtask
+
+execution.
+
+
+
+For every selected package/version case, the evaluation
+
+will record the OSV response obtained directly for that
+
+exact npm package/version.
+
+
+
+The frozen ground truth will record:
+
+
+
+\- package name;
+
+\- exact version;
+
+\- ecosystem;
+
+\- expected vulnerability state;
+
+\- expected OSV vulnerability identifiers;
+
+\- ground-truth collection date and time;
+
+\- source endpoint;
+
+\- and the preserved response artifact or its cryptographic
+
+&#x20; hash.
+
+
+
+The ground-truth records will not be changed in response to
+
+the subsequent Ligtask evaluation results.
+
+
+
+Because OSV is a continuously maintained vulnerability
+
+database, the recorded ground truth represents the state of
+
+OSV at the documented evaluation time.
+
+
+
+\## Case Selection
+
+
+
+Cases will be selected before the formal Ligtask evaluation
+
+results are observed.
+
+
+
+The controlled dataset will include both known vulnerable
+
+package/version cases and non-vulnerable controls.
+
+
+
+Package/version cases will not be added, removed, or changed
+
+because of their observed Ligtask results.
+
+
+
+\## Measurements
+
+
+
+The evaluation will record:
+
+
+
+\- total controlled cases;
+
+\- vulnerable cases;
+
+\- non-vulnerable controls;
+
+\- correctly detected vulnerable cases;
+
+\- missed vulnerable cases;
+
+\- correctly handled non-vulnerable controls;
+
+\- unexpected vulnerability identifiers requiring
+
+&#x20; adjudication;
+
+\- package/version extraction success;
+
+\- OSV request status;
+
+\- normalized dependency findings;
+
+\- and processing time where applicable.
+
+
+
+Where the frozen ground truth supports binary
+
+classification, the following case-level classifications
+
+may be reported:
+
+
+
+\- TP: vulnerable case with at least one expected OSV
+
+&#x20; vulnerability detected;
+
+\- FN: vulnerable case with no expected OSV vulnerability
+
+&#x20; detected;
+
+\- FP: non-vulnerable case with a vulnerability finding
+
+&#x20; verified as incorrect against the frozen ground truth;
+
+\- TN: non-vulnerable case with no vulnerability finding.
+
+
+
+Precision, recall, false-positive rate, accuracy, and F1
+
+will only be calculated when the ground-truth dataset
+
+supports those classifications.
+
+
+
+\## Reproducibility and Integrity
+
+
+
+Ground-truth artifacts and formal result artifacts will be
+
+preserved separately from the source code where appropriate.
+
+
+
+Cryptographic hashes will be recorded for preserved
+
+evaluation artifacts.
+
+
+
+The evaluation date must be reported with dependency
+
+results because OSV data may change after the formal
+
+evaluation.
+
+
+
+The dependency evaluation assesses Ligtask's use of OSV for
+
+known dependency vulnerabilities. It does not demonstrate
+
+detection of vulnerabilities that are absent from OSV and
+
+does not evaluate unknown or zero-day dependency
+
+vulnerabilities.
