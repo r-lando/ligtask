@@ -1,8 +1,10 @@
-import re
+﻿import re
+
 from pathlib import Path
 
 
 # Files/directories that should not be scanned.
+
 IGNORED_DIRECTORIES = {
     ".git",
     ".venv",
@@ -68,10 +70,14 @@ SECRET_RULES = [
     },
     {
         "id": "database-connection-string",
-        "title": "Potential Database Connection String Detected",
+        "title": (
+            "Potential Database Connection "
+            "String Detected"
+        ),
         "severity": "HIGH",
         "pattern": re.compile(
-            r"\b(?:mongodb(?:\+srv)?|postgres(?:ql)?|mysql)"
+            r"\b(?:mongodb(?:\+srv)?|"
+            r"postgres(?:ql)?|mysql)"
             r"://[^\s\"'<>]+",
             re.IGNORECASE,
         ),
@@ -153,7 +159,10 @@ def should_ignore_path(path: Path):
         if path.stat().st_size > MAX_FILE_SIZE:
             return True
     except OSError:
-        return True
+        # Do not treat a stat failure as an
+        # intentional ignore. The read stage
+        # should record it as a processing error.
+        return False
 
     return False
 
@@ -193,27 +202,47 @@ def is_placeholder(value):
 
 def read_text_file(path: Path):
     """
-    Read a file as text.
+    Read a file for secret scanning.
 
-    Files that cannot reasonably be interpreted
-    as text are skipped.
+    Returns a status so intentionally skipped
+    files can be distinguished from files that
+    could not be read.
     """
     try:
         raw_data = path.read_bytes()
     except OSError:
-        return None
+        return {
+            "status": "error",
+            "content": None,
+        }
 
-    # Simple binary-file check.
+    # Binary files are normal skips rather than
+    # scanner failures.
     if b"\x00" in raw_data:
-        return None
+        return {
+            "status": "skipped",
+            "content": None,
+        }
 
     try:
-        return raw_data.decode("utf-8")
+        content = raw_data.decode("utf-8")
     except UnicodeDecodeError:
-        return None
+        return {
+            "status": "skipped",
+            "content": None,
+        }
+
+    return {
+        "status": "read",
+        "content": content,
+    }
 
 
-def scan_line(line, line_number, file_path):
+def scan_line(
+    line,
+    line_number,
+    file_path,
+):
     """
     Apply all secret-detection rules to one line.
     """
@@ -260,49 +289,106 @@ def scan_secrets(repository_path: Path):
     Secret values are used only for temporary
     matching and are never returned in findings.
     """
+
     findings = []
     files_scanned = 0
+    files_skipped = 0
+    processing_errors = []
 
-    for path in repository_path.rglob("*"):
-        if not path.is_file():
-            continue
+    try:
+        repository_entries = repository_path.rglob("*")
 
-        if should_ignore_path(path):
-            continue
+        for path in repository_entries:
+            try:
+                if not path.is_file():
+                    continue
+            except OSError:
+                processing_errors.append({
+                    "error": (
+                        "A repository entry could not "
+                        "be inspected during secret "
+                        "detection."
+                    ),
+                })
+                continue
 
-        content = read_text_file(path)
+            if should_ignore_path(path):
+                continue
 
-        if content is None:
-            continue
+            read_result = read_text_file(path)
+            read_status = read_result["status"]
 
-        files_scanned += 1
+            if read_status == "skipped":
+                files_skipped += 1
+                continue
 
-        try:
-            relative_path = path.relative_to(
-                repository_path
-            )
-        except ValueError:
-            relative_path = Path(path.name)
+            if read_status == "error":
+                processing_errors.append({
+                    "error": (
+                        "An eligible repository file "
+                        "could not be read during "
+                        "secret detection."
+                    ),
+                })
+                continue
 
-        relative_path = Path(
-            str(relative_path).replace("\\", "/")
-        )
+            content = read_result["content"]
+            files_scanned += 1
 
-        for line_number, line in enumerate(
-            content.splitlines(),
-            start=1
-        ):
-            findings.extend(
-                scan_line(
-                    line,
-                    line_number,
-                    relative_path,
+            try:
+                relative_path = path.relative_to(
+                    repository_path
+                )
+            except ValueError:
+                relative_path = Path(path.name)
+
+            relative_path = Path(
+                str(relative_path).replace(
+                    "\\",
+                    "/",
                 )
             )
 
+            for line_number, line in enumerate(
+                content.splitlines(),
+                start=1,
+            ):
+                findings.extend(
+                    scan_line(
+                        line,
+                        line_number,
+                        relative_path,
+                    )
+                )
+
+    except OSError:
+        return {
+            "files_scanned": files_scanned,
+            "files_skipped": files_skipped,
+            "findings_count": len(findings),
+            "findings": findings,
+            "scan_status": "failed",
+            "processing_errors": [
+                {
+                    "error": (
+                        "The repository could not be "
+                        "fully traversed during secret "
+                        "detection."
+                    ),
+                }
+            ],
+        }
+
+    if processing_errors:
+        scan_status = "completed_with_errors"
+    else:
+        scan_status = "completed"
+
     return {
         "files_scanned": files_scanned,
+        "files_skipped": files_skipped,
         "findings_count": len(findings),
         "findings": findings,
-        "scan_status": "completed",
+        "scan_status": scan_status,
+        "processing_errors": processing_errors,
     }

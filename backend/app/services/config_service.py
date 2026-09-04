@@ -1,4 +1,5 @@
-import re
+﻿import re
+
 from pathlib import Path
 
 
@@ -9,7 +10,8 @@ CONFIG_RULES = [
         "severity": "MEDIUM",
         "message": (
             "The Dockerfile does not define a non-root USER. "
-            "The container may therefore run with elevated privileges."
+            "The container may therefore run with elevated "
+            "privileges."
         ),
     },
     {
@@ -18,7 +20,8 @@ CONFIG_RULES = [
         "severity": "LOW",
         "message": (
             "The Dockerfile uses the latest image tag. "
-            "Using a specific image version improves build reproducibility."
+            "Using a specific image version improves build "
+            "reproducibility."
         ),
     },
     {
@@ -26,8 +29,9 @@ CONFIG_RULES = [
         "title": "Docker ADD Instruction Used",
         "severity": "LOW",
         "message": (
-            "The Dockerfile uses ADD. COPY is generally preferred "
-            "when ADD-specific behavior is not required."
+            "The Dockerfile uses ADD. COPY is generally "
+            "preferred when ADD-specific behavior is not "
+            "required."
         ),
     },
 ]
@@ -36,22 +40,36 @@ CONFIG_RULES = [
 def read_dockerfile(path: Path):
     """
     Read a Dockerfile as UTF-8 text.
+
+    Returns a structured result so an unreadable
+    supported configuration file is not treated
+    as a successful zero-finding scan.
     """
     try:
-        return path.read_text(
+        content = path.read_text(
             encoding="utf-8"
         )
-    except (
-        OSError,
-        UnicodeDecodeError
-    ):
-        return None
+    except OSError:
+        return {
+            "status": "error",
+            "content": None,
+        }
+    except UnicodeDecodeError:
+        return {
+            "status": "error",
+            "content": None,
+        }
+
+    return {
+        "status": "read",
+        "content": content,
+    }
 
 
 def create_finding(
     rule,
     file_path,
-    line=None
+    line=None,
 ):
     """
     Create a configuration-security finding
@@ -65,7 +83,7 @@ def create_finding(
         "severity": rule["severity"],
         "file": str(file_path).replace(
             "\\",
-            "/"
+            "/",
         ),
         "line": line,
         "message": rule["message"],
@@ -85,7 +103,7 @@ def find_rule(rule_id):
 
 def analyze_dockerfile(
     dockerfile_path: Path,
-    repository_path: Path
+    repository_path: Path,
 ):
     """
     Apply predefined security checks to one
@@ -93,12 +111,17 @@ def analyze_dockerfile(
     """
     findings = []
 
-    content = read_dockerfile(
+    read_result = read_dockerfile(
         dockerfile_path
     )
 
-    if content is None:
-        return findings
+    if read_result["status"] != "read":
+        return {
+            "status": "error",
+            "findings": findings,
+        }
+
+    content = read_result["content"]
 
     try:
         relative_path = (
@@ -121,7 +144,7 @@ def analyze_dockerfile(
 
     for line_number, line in enumerate(
         lines,
-        start=1
+        start=1,
     ):
         stripped = line.strip()
 
@@ -193,7 +216,7 @@ def analyze_dockerfile(
     if latest_rule:
         for line_number, line in enumerate(
             lines,
-            start=1
+            start=1,
         ):
             stripped = line.strip()
 
@@ -236,7 +259,7 @@ def analyze_dockerfile(
     if add_rule:
         for line_number, line in enumerate(
             lines,
-            start=1
+            start=1,
         ):
             stripped = line.strip()
 
@@ -259,11 +282,14 @@ def analyze_dockerfile(
                     )
                 )
 
-    return findings
+    return {
+        "status": "completed",
+        "findings": findings,
+    }
 
 
 def scan_configurations(
-    repository_path: Path
+    repository_path: Path,
 ):
     """
     Scan supported repository configuration files
@@ -271,30 +297,78 @@ def scan_configurations(
 
     Initial implementation supports Dockerfiles.
     """
+
     findings = []
     files_scanned = 0
+    processing_errors = []
 
-    for path in repository_path.rglob("*"):
-        if not path.is_file():
-            continue
+    try:
+        repository_entries = repository_path.rglob("*")
 
-        if path.name.lower() != "dockerfile":
-            continue
+        for path in repository_entries:
+            try:
+                if not path.is_file():
+                    continue
+            except OSError:
+                processing_errors.append({
+                    "error": (
+                        "A repository entry could not "
+                        "be inspected during "
+                        "configuration assessment."
+                    ),
+                })
+                continue
 
-        files_scanned += 1
+            if path.name.lower() != "dockerfile":
+                continue
 
-        findings.extend(
-            analyze_dockerfile(
+            analysis_result = analyze_dockerfile(
                 path,
                 repository_path,
             )
-        )
+
+            if analysis_result["status"] == "error":
+                processing_errors.append({
+                    "error": (
+                        "A supported configuration file "
+                        "could not be read during "
+                        "configuration assessment."
+                    ),
+                })
+                continue
+
+            files_scanned += 1
+
+            findings.extend(
+                analysis_result["findings"]
+            )
+
+    except OSError:
+        return {
+            "files_scanned": files_scanned,
+            "findings_count": len(findings),
+            "findings": findings,
+            "scan_status": "failed",
+            "processing_errors": [
+                {
+                    "error": (
+                        "The repository could not be "
+                        "fully traversed during "
+                        "configuration assessment."
+                    ),
+                }
+            ],
+        }
+
+    if processing_errors:
+        scan_status = "completed_with_errors"
+    else:
+        scan_status = "completed"
 
     return {
         "files_scanned": files_scanned,
-        "findings_count": len(
-            findings
-        ),
+        "findings_count": len(findings),
         "findings": findings,
-        "scan_status": "completed",
+        "scan_status": scan_status,
+        "processing_errors": processing_errors,
     }

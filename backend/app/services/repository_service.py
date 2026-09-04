@@ -533,14 +533,57 @@ def run_assessment_pipeline(
         )
     )
 
-    secret_status = {
-        "status": "completed",
-        "scanner": "Ligtask",
-        "findings_count": len(
-            normalized_secret_findings
-        ),
-        "error": None,
-    }
+    secret_scan_status = secret_results.get(
+        "scan_status",
+        "failed",
+    )
+
+    secret_processing_errors = secret_results.get(
+        "processing_errors",
+        [],
+    )
+
+    if secret_scan_status == "completed":
+        secret_status = {
+            "status": "completed",
+            "scanner": "Ligtask",
+            "findings_count": len(
+                normalized_secret_findings
+            ),
+            "error": None,
+        }
+
+    elif secret_scan_status == "completed_with_errors":
+        secret_status = {
+            "status": "partial",
+            "scanner": "Ligtask",
+            "findings_count": len(
+                normalized_secret_findings
+            ),
+            "error": (
+                "Secret detection completed with "
+                "one or more file-processing errors."
+            ),
+        }
+
+    else:
+        secret_status = {
+            "status": "failed",
+            "scanner": "Ligtask",
+            "findings_count": len(
+                normalized_secret_findings
+            ),
+            "error": (
+                secret_processing_errors[0].get(
+                    "error"
+                )
+                if secret_processing_errors
+                else (
+                    "Secret detection did not "
+                    "complete successfully."
+                )
+            ),
+        }
 
     # -----------------------------------------
     # 5. Configuration assessment
@@ -559,14 +602,58 @@ def run_assessment_pipeline(
         )
     )
 
-    configuration_status = {
-        "status": "completed",
-        "scanner": "Ligtask",
-        "findings_count": len(
-            normalized_config_findings
-        ),
-        "error": None,
-    }
+    config_scan_status = config_results.get(
+        "scan_status",
+        "failed",
+    )
+
+    config_processing_errors = config_results.get(
+        "processing_errors",
+        [],
+    )
+
+    if config_scan_status == "completed":
+        configuration_status = {
+            "status": "completed",
+            "scanner": "Ligtask",
+            "findings_count": len(
+                normalized_config_findings
+            ),
+            "error": None,
+        }
+
+    elif config_scan_status == "completed_with_errors":
+        configuration_status = {
+            "status": "partial",
+            "scanner": "Ligtask",
+            "findings_count": len(
+                normalized_config_findings
+            ),
+            "error": (
+                "Configuration assessment completed "
+                "with one or more file-processing "
+                "errors."
+            ),
+        }
+
+    else:
+        configuration_status = {
+            "status": "failed",
+            "scanner": "Ligtask",
+            "findings_count": len(
+                normalized_config_findings
+            ),
+            "error": (
+                config_processing_errors[0].get(
+                    "error"
+                )
+                if config_processing_errors
+                else (
+                    "Configuration assessment did "
+                    "not complete successfully."
+                )
+            ),
+        }
 
     # -----------------------------------------
     # 6. Mechanism execution status
