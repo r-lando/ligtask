@@ -203,11 +203,11 @@ def query_osv_batch(client, dependencies):
     except (
         httpx.HTTPError,
         ValueError
-    ) as error:
+    ):
         return {
             "success": False,
             "results": [],
-            "error": str(error),
+            "error": "OSV vulnerability query failed.",
         }
 
 
@@ -243,11 +243,11 @@ def get_vulnerability_details(
     except (
         httpx.HTTPError,
         ValueError
-    ) as error:
+    ):
         return {
             "success": False,
             "data": None,
-            "error": str(error),
+            "error": "OSV vulnerability details could not be retrieved.",
         }
 
 
