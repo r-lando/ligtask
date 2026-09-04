@@ -38,3 +38,6 @@ evaluation/semgrep-rules/
 
 # Dependency evaluation raw OSV snapshots
 evaluation/dependency/ground-truth/*.json
+
+# Dependency evaluation formal artifacts
+evaluation/dependency/results/
