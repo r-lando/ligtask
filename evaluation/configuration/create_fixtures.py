@@ -72,11 +72,8 @@ CMD ["python", "app.py"]
 """,
 
     "CFG-009": """\
-FROM python:3.12
-WORKDIR /app
-COPY . /app
-USER appuser
-CMD ["python", "app.py"]
+FROM nginx:1.27.4
+USER nginx
 """,
 
     "CFG-010": """\
