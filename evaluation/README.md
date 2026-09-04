@@ -124,6 +124,44 @@ Findings unrelated to the benchmark vulnerability category
 assigned to a test case are not treated as successful
 detections of that benchmark case.
 
+## SAST Finding-to-Benchmark Mapping
+
+Formal scoring is performed at the benchmark test-case level.
+A Semgrep finding counts as detection of a benchmark case only
+when the finding occurs in that benchmark test file and its
+security category corresponds to the vulnerability category
+assigned to that case by the OWASP Benchmark ground truth.
+
+The following benchmark-category mapping is used:
+
+- CWE-22 findings -> pathtraver
+- CWE-78 findings -> cmdi
+- CWE-79 findings -> xss
+- CWE-89 findings -> sqli
+- CWE-90 findings -> ldapi
+- CWE-326 DES/3DES findings -> crypto
+- CWE-327 findings -> crypto
+- CWE-328 findings -> hash
+- CWE-330 findings -> weakrand
+- CWE-501 findings -> trustbound
+- CWE-614 findings -> securecookie
+- CWE-643 findings -> xpathi
+
+The OWASP Benchmark classifies its crypto test cases as
+CWE-327. The pinned Semgrep rules classify detected DES and
+3DES usage as CWE-326. Because these rules identify the
+insecure cryptographic behavior exercised by the benchmark's
+crypto test cases, their findings are mapped to the benchmark
+crypto category for test-case scoring. This is a
+benchmark-category mapping and does not treat CWE-326 and
+CWE-327 as generally interchangeable.
+
+Multiple corresponding Semgrep findings within the same
+benchmark test case count as one detected case. Findings in a
+benchmark test file that do not correspond to that file's
+assigned benchmark category do not count as detection of the
+case.
+
 ## Evaluation Integrity
 
 The benchmark source code and expected-results file must not
