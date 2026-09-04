@@ -1,0 +1,11 @@
+case_id,package,version,intended_group
+DEP-001,lodash,4.17.15,vulnerable_candidate
+DEP-002,minimist,0.0.8,vulnerable_candidate
+DEP-003,axios,0.21.1,vulnerable_candidate
+DEP-004,express,4.17.1,vulnerable_candidate
+DEP-005,jsonwebtoken,8.5.1,vulnerable_candidate
+DEP-006,lodash,4.17.21,control_candidate
+DEP-007,minimist,1.2.8,control_candidate
+DEP-008,axios,1.12.2,control_candidate
+DEP-009,express,5.1.0,control_candidate
+DEP-010,jsonwebtoken,9.0.2,control_candidate
