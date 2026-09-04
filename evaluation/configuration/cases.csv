@@ -1,0 +1,13 @@
+case_id,case_group,target_rule,expected_finding,expected_rule_id,description
+CFG-001,positive,docker-root-user,true,docker-root-user,Dockerfile has no USER instruction
+CFG-002,positive,docker-root-user,true,docker-root-user,Final USER is explicitly root
+CFG-003,positive,docker-latest-tag,true,docker-latest-tag,FROM image uses lowercase latest tag
+CFG-004,positive,docker-latest-tag,true,docker-latest-tag,FROM image uses uppercase LATEST tag
+CFG-005,positive,docker-add-instead-of-copy,true,docker-add-instead-of-copy,Dockerfile uses ADD instruction
+CFG-006,positive,docker-add-instead-of-copy,true,docker-add-instead-of-copy,Dockerfile uses lowercase add instruction
+CFG-007,negative,docker-root-user,false,NONE,Final USER is a non-root account
+CFG-008,negative,docker-root-user,false,NONE,Earlier root USER is followed by final non-root USER
+CFG-009,negative,docker-latest-tag,false,NONE,FROM image uses an explicit version tag
+CFG-010,negative,docker-latest-tag,false,NONE,FROM image is pinned by digest
+CFG-011,negative,docker-add-instead-of-copy,false,NONE,Dockerfile uses COPY instead of ADD
+CFG-012,negative,comment-handling,false,NONE,Insecure-looking Docker instructions appear only in comments
