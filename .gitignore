@@ -29,3 +29,9 @@ tmp/
 *.db
 *.db-shm
 *.db-wal
+# Technical evaluation artifacts
+evaluation/benchmarks/
+evaluation/results/
+evaluation/semgrep-benchmark-dryrun.json
+evaluation/semgrep-auto-config.json
+evaluation/semgrep-rules/
