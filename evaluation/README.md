@@ -179,3 +179,85 @@ limitations must be recorded with the evaluation results.
 The OWASP Benchmark evaluates the SAST component of Ligtask.
 Dependency assessment, secret detection, and configuration
 assessment require separate controlled evaluation datasets.
+## Formal OWASP Benchmark SAST Results
+
+The formal controlled SAST evaluation was performed using the
+previously frozen methodology, finding-to-benchmark mapping,
+and deterministic scoring procedure.
+
+### Execution Summary
+
+- Benchmark cases: 2,740
+- Vulnerable cases: 1,415
+- Non-vulnerable cases: 1,325
+- Semgrep version: 1.176.0
+- Semgrep engine: OSS
+- Validated security rules: 86
+- Java rules executed: 82
+- Target files scanned: 2,740
+- Raw Semgrep findings: 2,404
+- Semgrep errors: 0
+- Skipped targets: 0
+- Formal scan wall-clock time: 44.5041788 seconds
+
+### Overall Case-Level Results
+
+- True positives (TP): 1,248
+- False positives (FP): 552
+- False negatives (FN): 167
+- True negatives (TN): 773
+- Precision: 0.6933
+- Recall: 0.8820
+- False-positive rate: 0.4166
+- Accuracy: 0.7376
+- F1 score: 0.7764
+
+The 2,404 raw Semgrep findings must not be interpreted as
+2,404 detected vulnerabilities. After category-aware
+benchmark matching, 2,258 raw findings corresponded to the
+assigned vulnerability categories of benchmark cases. These
+findings covered 1,800 distinct benchmark cases, consisting
+of 1,248 true-positive cases and 552 false-positive cases.
+An additional 146 raw findings were unrelated to the
+benchmark category assigned to the files in which they
+occurred.
+
+### Per-Category Results
+
+| Category | Cases | TP | FP | FN | TN | Precision | Recall | FPR | F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| pathtraver | 268 | 120 | 106 | 13 | 29 | 0.5310 | 0.9023 | 0.7852 | 0.6685 |
+| cmdi | 251 | 117 | 109 | 9 | 16 | 0.5177 | 0.9286 | 0.8720 | 0.6648 |
+| xss | 455 | 202 | 108 | 44 | 101 | 0.6516 | 0.8211 | 0.5167 | 0.7266 |
+| sqli | 504 | 253 | 170 | 19 | 62 | 0.5981 | 0.9301 | 0.7328 | 0.7281 |
+| ldapi | 59 | 26 | 28 | 1 | 4 | 0.4815 | 0.9630 | 0.8750 | 0.6420 |
+| crypto | 246 | 130 | 0 | 0 | 116 | 1.0000 | 1.0000 | 0.0000 | 1.0000 |
+| hash | 236 | 89 | 0 | 40 | 107 | 1.0000 | 0.6899 | 0.0000 | 0.8165 |
+| weakrand | 493 | 218 | 0 | 0 | 275 | 1.0000 | 1.0000 | 0.0000 | 1.0000 |
+| trustbound | 126 | 43 | 18 | 40 | 25 | 0.7049 | 0.5181 | 0.4186 | 0.5972 |
+| securecookie | 67 | 36 | 0 | 0 | 31 | 1.0000 | 1.0000 | 0.0000 | 1.0000 |
+| xpathi | 35 | 14 | 13 | 1 | 7 | 0.5185 | 0.9333 | 0.6500 | 0.6667 |
+
+### Artifact Integrity
+
+Formal raw Semgrep output:
+
+`evaluation/results/owasp-semgrep-formal.json`
+
+SHA-256:
+
+`146851B230C84B05267E5391BE509170C6A7E0EBB8E133A99EB6795CB623774F`
+
+Deterministic scoring output:
+
+`evaluation/results/owasp-semgrep-scoring.txt`
+
+SHA-256:
+
+`F031BF89D7D74AA0DCE549A44FF2DBAB580CD30C41FE2A89BEB1915A2987D508`
+
+The raw result artifacts are retained locally under the
+ignored `evaluation/results/` directory. Their hashes are
+recorded here so that the evaluated artifacts can be
+identified without committing the large generated result
+files to the source repository.
