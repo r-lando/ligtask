@@ -79,14 +79,22 @@ def validate_and_extract_archive(
     extract_dir,
 ):
     """
-    Validate and securely extract a
-    repository ZIP archive.
+    Validate and securely extract a repository ZIP archive.
 
-    Returns the total uncompressed size.
+    Security controls:
+    - Valid ZIP verification
+    - Maximum archive entry count
+    - Maximum total extracted size
+    - Path traversal prevention
+    - Absolute path rejection
+    - Windows-style path traversal rejection
+    - Symbolic link rejection
+    - Per-entry controlled extraction
+
+    Returns the total number of bytes actually extracted.
     """
-    if not zipfile.is_zipfile(
-        zip_path
-    ):
+
+    if not zipfile.is_zipfile(zip_path):
         raise HTTPException(
             status_code=400,
             detail=(
@@ -100,77 +108,224 @@ def validate_and_extract_archive(
         exist_ok=True,
     )
 
-    with zipfile.ZipFile(
-        zip_path,
-        "r",
-    ) as archive:
-        members = archive.infolist()
+    root = extract_dir.resolve()
 
-        if (
-            len(members)
-            > MAX_FILE_COUNT
-        ):
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "Repository contains too "
-                    "many files."
-                ),
-            )
+    try:
+        with zipfile.ZipFile(
+            zip_path,
+            "r",
+        ) as archive:
+            members = archive.infolist()
 
-        extracted_size = sum(
-            member.file_size
-            for member in members
-        )
+            # -----------------------------------------
+            # 1. Limit archive entry count
+            # -----------------------------------------
 
-        if (
-            extracted_size
-            > MAX_EXTRACTED_SIZE
-        ):
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "Extracted repository "
-                    "exceeds the allowed size."
-                ),
-            )
-
-        root = extract_dir.resolve()
-
-        for member in members:
-            if is_zip_symlink(member):
+            if len(members) > MAX_FILE_COUNT:
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        "Symbolic links are not "
-                        "allowed in repository ZIP "
-                        "archives."
+                        "Repository contains too "
+                        "many archive entries."
                     ),
                 )
 
-            destination = (
-                extract_dir
-                / member.filename
-            ).resolve()
+            # -----------------------------------------
+            # 2. Validate declared extracted size
+            # -----------------------------------------
 
-            if (
-                root
-                not in destination.parents
-                and destination != root
-            ):
+            declared_size = sum(
+                member.file_size
+                for member in members
+            )
+
+            if declared_size > MAX_EXTRACTED_SIZE:
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        "Unsafe path detected "
-                        "in ZIP archive."
+                        "Extracted repository "
+                        "exceeds the allowed size."
                     ),
                 )
 
-        archive.extractall(
-            extract_dir
-        )
+            actual_extracted_size = 0
 
-    return extracted_size
+            # -----------------------------------------
+            # 3. Validate and extract each entry
+            # -----------------------------------------
+
+            for member in members:
+                member_name = member.filename
+
+                # ZIP entries should use forward slashes,
+                # but normalize backslashes so Windows-style
+                # traversal attempts are handled consistently.
+                normalized_name = member_name.replace(
+                    "\\",
+                    "/",
+                )
+
+                # Reject empty or suspicious names.
+                if not normalized_name:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Invalid empty path detected "
+                            "in ZIP archive."
+                        ),
+                    )
+
+                member_path = Path(normalized_name)
+
+                # Reject absolute paths such as:
+                # /etc/passwd
+                if member_path.is_absolute():
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Absolute paths are not "
+                            "allowed in ZIP archives."
+                        ),
+                    )
+
+                # Reject Windows drive-style paths such as:
+                # C:/Windows/file.txt
+                if (
+                    len(normalized_name) >= 2
+                    and normalized_name[1] == ":"
+                    and normalized_name[0].isalpha()
+                ):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Drive-qualified paths are not "
+                            "allowed in ZIP archives."
+                        ),
+                    )
+
+                # Explicitly reject traversal components.
+                if ".." in member_path.parts:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Path traversal detected "
+                            "in ZIP archive."
+                        ),
+                    )
+
+                # Reject symbolic links.
+                if is_zip_symlink(member):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Symbolic links are not "
+                            "allowed in repository ZIP "
+                            "archives."
+                        ),
+                    )
+
+                destination = (
+                    extract_dir
+                    / member_path
+                ).resolve()
+
+                # Defense-in-depth containment check.
+                if (
+                    destination != root
+                    and root not in destination.parents
+                ):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Unsafe path detected "
+                            "in ZIP archive."
+                        ),
+                    )
+
+                # -------------------------------------
+                # Directory entry
+                # -------------------------------------
+
+                if member.is_dir():
+                    destination.mkdir(
+                        parents=True,
+                        exist_ok=True,
+                    )
+                    continue
+
+                # -------------------------------------
+                # File entry
+                # -------------------------------------
+
+                destination.parent.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+
+                try:
+                    with archive.open(
+                        member,
+                        "r",
+                    ) as source:
+                        with destination.open(
+                            "wb",
+                        ) as target:
+                            while True:
+                                chunk = source.read(
+                                    1024 * 1024
+                                )
+
+                                if not chunk:
+                                    break
+
+                                actual_extracted_size += len(
+                                    chunk
+                                )
+
+                                if (
+                                    actual_extracted_size
+                                    > MAX_EXTRACTED_SIZE
+                                ):
+                                    raise HTTPException(
+                                        status_code=400,
+                                        detail=(
+                                            "Extracted repository "
+                                            "exceeds the allowed size."
+                                        ),
+                                    )
+
+                                target.write(chunk)
+
+                except (
+                    RuntimeError,
+                    zipfile.BadZipFile,
+                    EOFError,
+                ) as exc:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Repository ZIP contains an "
+                            "invalid or corrupted entry."
+                        ),
+                    ) from exc
+
+            return actual_extracted_size
+
+    except HTTPException:
+        raise
+
+    except (
+        zipfile.BadZipFile,
+        RuntimeError,
+        EOFError,
+    ) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Repository ZIP archive is invalid "
+                "or corrupted."
+            ),
+        ) from exc
 
 
 def resolve_repository_root(
