@@ -35,3 +35,6 @@ evaluation/results/
 evaluation/semgrep-benchmark-dryrun.json
 evaluation/semgrep-auto-config.json
 evaluation/semgrep-rules/
+
+# Dependency evaluation raw OSV snapshots
+evaluation/dependency/ground-truth/*.json
