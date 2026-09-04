@@ -462,14 +462,61 @@ def run_assessment_pipeline(
         )
     )
 
-    dependency_status = {
-        "status": "completed",
-        "scanner": "OSV",
-        "findings_count": len(
-            normalized_dependency_findings
-        ),
-        "error": None,
-    }
+    dependency_scan_status = (
+        dependency_results.get(
+            "scan_status",
+            "failed",
+        )
+    )
+
+    dependency_request_errors = (
+        dependency_results.get(
+            "request_errors",
+            [],
+        )
+    )
+
+    if dependency_scan_status == "completed":
+        dependency_status = {
+            "status": "completed",
+            "scanner": "OSV",
+            "findings_count": len(
+                normalized_dependency_findings
+            ),
+            "error": None,
+        }
+
+    elif dependency_scan_status == "completed_with_errors":
+        dependency_status = {
+            "status": "partial",
+            "scanner": "OSV",
+            "findings_count": len(
+                normalized_dependency_findings
+            ),
+            "error": (
+                "OSV dependency assessment completed "
+                "with one or more request errors."
+            ),
+        }
+
+    else:
+        dependency_status = {
+            "status": "failed",
+            "scanner": "OSV",
+            "findings_count": len(
+                normalized_dependency_findings
+            ),
+            "error": (
+                dependency_request_errors[0].get(
+                    "error"
+                )
+                if dependency_request_errors
+                else (
+                    "OSV dependency assessment "
+                    "did not complete successfully."
+                )
+            ),
+        }
 
     # -----------------------------------------
     # 4. Secret detection
