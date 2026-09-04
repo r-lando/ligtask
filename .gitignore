@@ -44,3 +44,5 @@ evaluation/dependency/results/
 
 # Secret detection formal artifacts
 evaluation/secret/results/
+
+evaluation/configuration/results/
