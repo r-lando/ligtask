@@ -297,3 +297,47 @@ detection of vulnerabilities that are absent from OSV and
 does not evaluate unknown or zero-day dependency
 
 vulnerabilities.
+
+## Controlled Case-Selection Procedure
+
+The formal controlled dataset will contain 10 npm
+package/version cases:
+
+- 5 vulnerable cases; and
+- 5 non-vulnerable control cases.
+
+Distinct npm packages will be used where practical so that
+the evaluation is not dominated by multiple versions of a
+single package.
+
+Candidate cases will be evaluated using direct OSV
+package/version queries before any formal Ligtask execution.
+
+A candidate is eligible as a vulnerable case when the
+direct OSV query for its exact npm package/version returns
+at least one vulnerability identifier.
+
+A candidate is eligible as a non-vulnerable control when
+the direct OSV query for its exact npm package/version
+returns no vulnerability identifiers at the time the
+ground truth is collected.
+
+Selection eligibility is determined only from the direct
+OSV ground-truth query. Ligtask output must not be inspected
+or used when deciding whether a candidate is included.
+
+Once 5 vulnerable and 5 non-vulnerable eligible cases have
+been selected and their ground truth has been frozen, the
+formal case list will not be changed because of subsequent
+Ligtask results.
+
+For each selected case, the exact package name, version,
+expected OSV identifiers, collection timestamp, and
+ground-truth artifact hash will be recorded before the
+formal Ligtask evaluation is executed.
+
+The purpose of the controlled dataset is to verify the
+implemented dependency-assessment pipeline under known
+package/version conditions. The dataset is not intended to
+estimate the prevalence of vulnerable npm packages in the
+general software ecosystem.
