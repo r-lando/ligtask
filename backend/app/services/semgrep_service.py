@@ -5,6 +5,12 @@ from pathlib import Path
 
 SEMGREP_TIMEOUT_SECONDS = 120
 
+SEMGREP_RULES_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "semgrep_rules"
+    / "v1"
+)
+
 
 def semgrep_failure(
     message,
@@ -30,18 +36,22 @@ def semgrep_failure(
 
 def run_semgrep(repository_path: Path):
     """
-    Run Semgrep against a repository with
+    Run Semgrep against a repository using the
+    frozen local Ligtask production ruleset with
     controlled timeout and failure handling.
     """
 
-    repository_path = Path(
-        repository_path
-    )
+    repository_path = Path(repository_path)
+
+    if not SEMGREP_RULES_PATH.is_dir():
+        return semgrep_failure(
+            "Semgrep ruleset is unavailable."
+        )
 
     command = [
         "semgrep",
         "--config",
-        "auto",
+        str(SEMGREP_RULES_PATH),
         "--json",
         str(repository_path),
     ]
@@ -99,9 +109,7 @@ def run_semgrep(repository_path: Path):
         )
 
     try:
-        semgrep_output = json.loads(
-            result.stdout
-        )
+        semgrep_output = json.loads(result.stdout)
 
     except json.JSONDecodeError:
         return semgrep_failure(
@@ -149,9 +157,7 @@ def run_semgrep(repository_path: Path):
 
     return {
         "success": True,
-        "findings_count": len(
-            findings
-        ),
+        "findings_count": len(findings),
         "findings": findings,
         "error": None,
         "timed_out": False,
