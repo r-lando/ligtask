@@ -150,6 +150,26 @@ function mechanismStatusColor(
 }
 
 
+const LANGUAGE_COLORS: Record<string, string> = {
+  JavaScript: '#f7df1e',
+  TypeScript: '#3178c6',
+  Python: '#3572a5',
+  PHP: '#4f5d95',
+  HTML: '#e34c26',
+  CSS: '#563d7c',
+  JSON: '#cbcb41',
+  YAML: '#cb171e',
+  Markdown: '#083fa1',
+  Shell: '#89e051',
+  Dockerfile: '#384d54',
+}
+
+
+function getLanguageColor(language: string): string {
+  return LANGUAGE_COLORS[language] ?? '#8b5cf6'
+}
+
+
 function SeverityBadge({
   severity,
 }: {
@@ -386,6 +406,41 @@ export default function AssessmentResultsScreen({
         mechanism: MechanismStatus
       } => Boolean(entry.mechanism),
     )
+
+  const repoProfile = assessment.repository_profile ?? {
+    total_files: assessment.total_files,
+    languages: {},
+    dependency_files: [],
+    configuration_files: [],
+  }
+
+  const languageEntries = Object.entries(
+    repoProfile.languages ?? {},
+  ).sort(([, a], [, b]) => b - a)
+
+  const totalLanguageFiles = languageEntries.reduce(
+    (sum, [, c]) => sum + c,
+    0,
+  )
+
+  const rawCount = assessment.raw_findings_count
+  const consolidatedCount =
+    assessment.consolidated_findings_count
+
+  const reductionRatio =
+    rawCount > 0
+      ? Math.max(
+          0,
+          Math.round(
+            ((rawCount - consolidatedCount) / rawCount) * 100,
+          ),
+        )
+      : 0
+
+  const totalMechanismFindings = mechanismEntries.reduce(
+    (sum, { mechanism }) => sum + mechanism.findings_count,
+    0,
+  )
 
 
   return (
@@ -627,6 +682,7 @@ export default function AssessmentResultsScreen({
               return (
                 <div
                   key={key}
+                  className="interactive-card"
                   style={{
                     padding: '13px 14px',
                     borderRadius: 9,
@@ -740,6 +796,7 @@ export default function AssessmentResultsScreen({
         ].map((item) => (
           <div
             key={item.label}
+            className="interactive-card"
             style={{
               padding: '16px 18px',
               borderRadius: 10,
@@ -791,13 +848,106 @@ export default function AssessmentResultsScreen({
       >
         <div
           style={{
-            color: '#94a3b8',
-            fontSize: 11,
-            fontWeight: 600,
+            display: 'flex',
+            justifyContent:
+              'space-between',
+            alignItems: 'center',
             marginBottom: 14,
           }}
         >
-          Severity Distribution
+          <div
+            style={{
+              color: '#94a3b8',
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Severity Distribution
+          </div>
+
+          {totalFindings > 0 && (
+            <div
+              style={{
+                color: '#64748b',
+                fontSize: 11,
+              }}
+            >
+              {totalFindings} consolidated finding{totalFindings === 1 ? '' : 's'}
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{
+            height: 8,
+            width: '100%',
+            borderRadius: 999,
+            overflow: 'hidden',
+            display: 'flex',
+            background:
+              'rgba(255, 255, 255, 0.05)',
+            marginBottom: 16,
+          }}
+        >
+          {totalFindings === 0 ? (
+            <div
+              style={{
+                width: '100%',
+                background:
+                  'rgba(34, 197, 94, 0.25)',
+              }}
+            />
+          ) : (
+            severityOrder.map((sev) => {
+              const count =
+                assessment
+                  .severity_summary[
+                  sev
+                ] || 0
+              if (count === 0)
+                return null
+              const pct =
+                (count /
+                  totalFindings) *
+                100
+              const isSelected =
+                severityFilter ===
+                  'ALL' ||
+                severityFilter ===
+                  sev
+              return (
+                <div
+                  key={sev}
+                  title={`${sev}: ${count} (${pct.toFixed(1)}%)`}
+                  onClick={() =>
+                    setSeverityFilter(
+                      severityFilter ===
+                        sev
+                        ? 'ALL'
+                        : sev,
+                    )
+                  }
+                  style={{
+                    width: `${pct}%`,
+                    backgroundColor:
+                      severityColor(
+                        sev,
+                      ),
+                    cursor:
+                      'pointer',
+                    transition:
+                      'opacity 0.2s ease',
+                    opacity:
+                      isSelected
+                        ? 1
+                        : 0.25,
+                  }}
+                />
+              )
+            })
+          )}
         </div>
 
         <div
@@ -814,16 +964,27 @@ export default function AssessmentResultsScreen({
                 assessment
                   .severity_summary[
                   severity
-                ]
+                ] || 0
+              const isSelected =
+                severityFilter ===
+                severity
+              const pct =
+                totalFindings > 0
+                  ? (
+                      (count /
+                        totalFindings) *
+                      100
+                    ).toFixed(0)
+                  : '0'
 
               return (
                 <button
                   type="button"
                   key={severity}
+                  className="interactive-card"
                   onClick={() =>
                     setSeverityFilter(
-                      severityFilter ===
-                        severity
+                      isSelected
                         ? 'ALL'
                         : severity,
                     )
@@ -837,33 +998,56 @@ export default function AssessmentResultsScreen({
                     fontFamily:
                       'inherit',
                     background:
-                      severityFilter ===
-                      severity
+                      isSelected
                         ? `${severityColor(
                             severity,
-                          )}12`
+                          )}15`
                         : 'var(--bg-surface-2)',
                     border:
-                      severityFilter ===
-                      severity
+                      isSelected
                         ? `1px solid ${severityColor(
                             severity,
-                          )}55`
+                          )}66`
                         : '1px solid var(--border)',
                   }}
                 >
                   <div
                     style={{
-                      color:
-                        severityColor(
-                          severity,
-                        ),
-                      fontSize: 18,
-                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems:
+                        'baseline',
+                      justifyContent:
+                        'space-between',
                       marginBottom: 3,
                     }}
                   >
-                    {count}
+                    <span
+                      style={{
+                        color:
+                          severityColor(
+                            severity,
+                          ),
+                        fontSize: 18,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {count}
+                    </span>
+
+                    {totalFindings >
+                      0 &&
+                      count > 0 && (
+                        <span
+                          style={{
+                            color:
+                              '#64748b',
+                            fontSize: 10,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {pct}%
+                        </span>
+                      )}
                   </div>
 
                   <div
@@ -885,134 +1069,619 @@ export default function AssessmentResultsScreen({
 
       <div
         style={{
-          padding: '16px 18px',
-          borderRadius: 10,
-          background:
-            'var(--bg-surface)',
-          border:
-            '1px solid var(--border)',
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(2, minmax(0, 1fr))',
+          gap: 16,
           marginBottom: 24,
         }}
       >
         <div
+          className="interactive-card"
           style={{
-            display: 'grid',
-            gridTemplateColumns:
-              'repeat(4, minmax(0, 1fr))',
+            padding: '18px 20px',
+            borderRadius: 10,
+            background:
+              'var(--bg-surface)',
+            border:
+              '1px solid var(--border)',
+            display: 'flex',
+            flexDirection: 'column',
             gap: 14,
           }}
         >
-          <div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent:
+                'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div
+              style={{
+                color: '#94a3b8',
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform:
+                  'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              Repository Profile & Languages
+            </div>
+
+            <span
+              style={{
+                color: '#64748b',
+                fontSize: 10,
+                fontWeight: 500,
+              }}
+            >
+              {assessment.total_files} files analyzed
+            </span>
+          </div>
+
+          {languageEntries.length > 0 ? (
+            <div>
+              <div
+                style={{
+                  height: 8,
+                  width: '100%',
+                  borderRadius: 999,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  background:
+                    'rgba(255, 255, 255, 0.05)',
+                  marginBottom: 10,
+                }}
+              >
+                {languageEntries.map(
+                  ([lang, count]) => {
+                    const pct =
+                      (count /
+                        totalLanguageFiles) *
+                      100
+                    return (
+                      <div
+                        key={lang}
+                        title={`${lang}: ${count} files (${pct.toFixed(1)}%)`}
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor:
+                            getLanguageColor(
+                              lang,
+                            ),
+                        }}
+                      />
+                    )
+                  },
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 10,
+                }}
+              >
+                {languageEntries.map(
+                  ([lang, count]) => {
+                    const pct = (
+                      (count /
+                        totalLanguageFiles) *
+                      100
+                    ).toFixed(1)
+                    const color =
+                      getLanguageColor(
+                        lang,
+                      )
+                    return (
+                      <div
+                        key={lang}
+                        style={{
+                          display:
+                            'flex',
+                          alignItems:
+                            'center',
+                          gap: 5,
+                          fontSize: 10,
+                          color: '#cbd5e1',
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius:
+                              '50%',
+                            backgroundColor:
+                              color,
+                            display:
+                              'inline-block',
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontWeight: 600,
+                          }}
+                        >
+                          {lang}
+                        </span>
+                        <span
+                          style={{
+                            color: '#64748b',
+                          }}
+                        >
+                          {pct}% ({count})
+                        </span>
+                      </div>
+                    )
+                  },
+                )}
+              </div>
+            </div>
+          ) : (
             <div
               style={{
                 color: '#64748b',
-                fontSize: 9,
-                marginBottom: 4,
-                textTransform:
-                  'uppercase',
+                fontSize: 11,
               }}
             >
-              Correlated Groups
+              No recognized language files detected.
             </div>
+          )}
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(2, minmax(0, 1fr))',
+              gap: 12,
+              paddingTop: 12,
+              borderTop:
+                '1px solid rgba(255, 255, 255, 0.06)',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: '#64748b',
+                  fontSize: 9,
+                  fontWeight: 600,
+                  textTransform:
+                    'uppercase',
+                  letterSpacing: '0.04em',
+                  marginBottom: 6,
+                }}
+              >
+                Dependency Manifests (
+                {
+                  repoProfile
+                    .dependency_files
+                    .length
+                }
+                )
+              </div>
+
+              {repoProfile
+                .dependency_files.length >
+              0 ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 5,
+                  }}
+                >
+                  {repoProfile.dependency_files.map(
+                    (file) => (
+                      <span
+                        key={file}
+                        style={{
+                          display:
+                            'inline-block',
+                          padding:
+                            '2px 7px',
+                          borderRadius: 4,
+                          background:
+                            'rgba(59, 130, 246, 0.1)',
+                          border:
+                            '1px solid rgba(59, 130, 246, 0.25)',
+                          color: '#93c5fd',
+                          fontSize: 9,
+                          fontFamily:
+                            'monospace',
+                        }}
+                      >
+                        {file}
+                      </span>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <span
+                  style={{
+                    color: '#64748b',
+                    fontSize: 10,
+                  }}
+                >
+                  None detected
+                </span>
+              )}
+            </div>
+
+            <div>
+              <div
+                style={{
+                  color: '#64748b',
+                  fontSize: 9,
+                  fontWeight: 600,
+                  textTransform:
+                    'uppercase',
+                  letterSpacing: '0.04em',
+                  marginBottom: 6,
+                }}
+              >
+                Configuration Files (
+                {
+                  repoProfile
+                    .configuration_files
+                    .length
+                }
+                )
+              </div>
+
+              {repoProfile
+                .configuration_files
+                .length > 0 ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 5,
+                  }}
+                >
+                  {repoProfile.configuration_files.map(
+                    (file) => (
+                      <span
+                        key={file}
+                        style={{
+                          display:
+                            'inline-block',
+                          padding:
+                            '2px 7px',
+                          borderRadius: 4,
+                          background:
+                            'rgba(168, 85, 247, 0.1)',
+                          border:
+                            '1px solid rgba(168, 85, 247, 0.25)',
+                          color: '#d8b4fe',
+                          fontSize: 9,
+                          fontFamily:
+                            'monospace',
+                        }}
+                      >
+                        {file}
+                      </span>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <span
+                  style={{
+                    color: '#64748b',
+                    fontSize: 10,
+                  }}
+                >
+                  None detected
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+
+        <div
+          className="interactive-card"
+          style={{
+            padding: '18px 20px',
+            borderRadius: 10,
+            background:
+              'var(--bg-surface)',
+            border:
+              '1px solid var(--border)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent:
+                'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div
+              style={{
+                color: '#94a3b8',
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform:
+                  'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              Consolidation Pipeline
+            </div>
+
+            {rawCount > 0 &&
+              reductionRatio > 0 && (
+                <span
+                  style={{
+                    color: '#34d399',
+                    background:
+                      'rgba(52, 211, 153, 0.1)',
+                    border:
+                      '1px solid rgba(52, 211, 153, 0.25)',
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: 9,
+                    fontWeight: 700,
+                  }}
+                >
+                  {reductionRatio}% Noise Reduced
+                </span>
+              )}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent:
+                'space-between',
+              gap: 8,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background:
+                'var(--bg-surface-2)',
+              border:
+                '1px solid var(--border)',
+            }}
+          >
+            <div
+              style={{
+                textAlign: 'center',
+                flex: 1,
+              }}
+            >
+              <div
+                style={{
+                  color: '#94a3b8',
+                  fontSize: 9,
+                  textTransform:
+                    'uppercase',
+                  marginBottom: 2,
+                }}
+              >
+                Raw Detections
+              </div>
+
+              <div
+                style={{
+                  color: '#e2e8f0',
+                  fontSize: 16,
+                  fontWeight: 700,
+                }}
+              >
+                {rawCount}
+              </div>
+            </div>
+
+            <span
+              style={{
+                color: '#64748b',
+                fontSize: 14,
+              }}
+            >
+              →
+            </span>
 
             <div
               style={{
-                color: '#e2e8f0',
-                fontSize: 13,
-                fontWeight: 600,
+                textAlign: 'center',
+                flex: 1.4,
               }}
             >
-              {
-                assessment.correlated_groups
-              }
+              <div
+                style={{
+                  color: '#a78bfa',
+                  fontSize: 9,
+                  textTransform:
+                    'uppercase',
+                  marginBottom: 2,
+                }}
+              >
+                Correlation Engine
+              </div>
+
+              <div
+                style={{
+                  color: '#cbd5e1',
+                  fontSize: 10,
+                  fontWeight: 600,
+                }}
+              >
+                {
+                  assessment
+                    .duplicate_findings_merged
+                }{' '}
+                merged ·{' '}
+                {
+                  assessment
+                    .correlated_groups
+                }{' '}
+                correlated
+              </div>
+            </div>
+
+            <span
+              style={{
+                color: '#64748b',
+                fontSize: 14,
+              }}
+            >
+              →
+            </span>
+
+            <div
+              style={{
+                textAlign: 'center',
+                flex: 1,
+              }}
+            >
+              <div
+                style={{
+                  color: '#38bdf8',
+                  fontSize: 9,
+                  textTransform:
+                    'uppercase',
+                  marginBottom: 2,
+                }}
+              >
+                Consolidated
+              </div>
+
+              <div
+                style={{
+                  color: '#38bdf8',
+                  fontSize: 16,
+                  fontWeight: 700,
+                }}
+              >
+                {consolidatedCount}
+              </div>
             </div>
           </div>
 
-
           <div>
             <div
               style={{
                 color: '#64748b',
                 fontSize: 9,
-                marginBottom: 4,
+                fontWeight: 600,
                 textTransform:
                   'uppercase',
+                letterSpacing: '0.04em',
+                marginBottom: 8,
               }}
             >
-              Findings Merged
+              Mechanism Findings Breakdown
             </div>
 
             <div
               style={{
-                color: '#e2e8f0',
-                fontSize: 13,
-                fontWeight: 600,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 7,
               }}
             >
-              {
-                assessment
-                  .duplicate_findings_merged
-              }
-            </div>
-          </div>
+              {mechanismEntries.map(
+                ({ key, mechanism }) => {
+                  const contribPct =
+                    totalMechanismFindings >
+                    0
+                      ? (mechanism.findings_count /
+                          totalMechanismFindings) *
+                        100
+                      : 0
 
+                  const barColor =
+                    key === 'sast'
+                      ? '#7c3aed'
+                      : key === 'dependency'
+                        ? '#3b82f6'
+                        : key === 'secret'
+                          ? '#f59e0b'
+                          : '#10b981'
 
-          <div>
-            <div
-              style={{
-                color: '#64748b',
-                fontSize: 9,
-                marginBottom: 4,
-                textTransform:
-                  'uppercase',
-              }}
-            >
-              Dependency Files
-            </div>
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        display: 'flex',
+                        alignItems:
+                          'center',
+                        gap: 8,
+                        fontSize: 10,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 84,
+                          color: '#cbd5e1',
+                          fontWeight: 600,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {mechanismLabels[
+                          key
+                        ] ?? key}
+                      </span>
 
-            <div
-              style={{
-                color: '#e2e8f0',
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {
-                assessment
-                  .repository_profile
-                  .dependency_files
-                  .length
-              }
-            </div>
-          </div>
+                      <div
+                        style={{
+                          flex: 1,
+                          height: 6,
+                          borderRadius: 3,
+                          background:
+                            'rgba(255, 255, 255, 0.06)',
+                          overflow:
+                            'hidden',
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${contribPct}%`,
+                            background:
+                              barColor,
+                            borderRadius: 3,
+                            transition:
+                              'width 0.3s ease',
+                          }}
+                        />
+                      </div>
 
-
-          <div>
-            <div
-              style={{
-                color: '#64748b',
-                fontSize: 9,
-                marginBottom: 4,
-                textTransform:
-                  'uppercase',
-              }}
-            >
-              Configuration Files
-            </div>
-
-            <div
-              style={{
-                color: '#e2e8f0',
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {
-                assessment
-                  .repository_profile
-                  .configuration_files
-                  .length
-              }
+                      <span
+                        style={{
+                          width: 64,
+                          textAlign:
+                            'right',
+                          color: '#94a3b8',
+                          fontFamily:
+                            'monospace',
+                          fontSize: 10,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {
+                          mechanism.findings_count
+                        }{' '}
+                        (
+                        {contribPct.toFixed(
+                          0,
+                        )}
+                        %)
+                      </span>
+                    </div>
+                  )
+                },
+              )}
             </div>
           </div>
         </div>
@@ -1106,6 +1775,7 @@ export default function AssessmentResultsScreen({
               <button
                 type="button"
                 key={finding.id}
+                className="interactive-card"
                 onClick={() =>
                   onOpenFinding(
                     finding,

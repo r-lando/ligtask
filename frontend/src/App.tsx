@@ -1657,72 +1657,82 @@ export default function App() {
           overflowX: 'hidden',
         }}
       >
-        {screen === 'home' && (
-          <HomeScreen navigate={navigate} />
-        )}
+        <div
+          key={screen + (screen === 'results' ? String(assessmentId) : '')}
+          className="animate-fade-in"
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {screen === 'home' && (
+            <HomeScreen navigate={navigate} />
+          )}
 
-        {screen === 'repo' && (
-          <RepositoryScreen
-            navigate={navigate}
-            onSelectInput={(input) => {
-              setAssessmentInput(input)
-              setAssessmentError('')
-            }}
-          />
-        )}
-
-        {screen === 'config' && (
-          <ScanConfigScreen
-            navigate={navigate}
-            assessmentInput={assessmentInput}
-            onStartAssessment={startAssessment}
-          />
-        )}
-
-        {screen === 'scanning' && (
-          <ScanningScreen
-            navigate={navigate}
-            assessmentInput={assessmentInput}
-            error={assessmentError}
-            onRetry={startAssessment}
-          />
-        )}
-
-        {screen === 'history' && (
-          <HistoryScreen
-            navigate={navigate}
-            onOpenAssessment={openAssessment}
-          />
-        )}
-
-        {screen === 'results' &&
-          assessmentId !== null && (
-            <AssessmentResultsScreen
-              assessmentId={assessmentId}
+          {screen === 'repo' && (
+            <RepositoryScreen
               navigate={navigate}
-              onOpenFinding={openFinding}
-            />
-          )}
-
-        {screen === 'results' &&
-          assessmentId === null && (
-            <div
-              style={{
-                padding: '40px 48px',
-                color: '#94a3b8',
+              onSelectInput={(input) => {
+                setAssessmentInput(input)
+                setAssessmentError('')
               }}
-            >
-              No assessment selected.
-            </div>
-          )}
-
-        {screen === 'detail' &&
-          selectedFinding !== null && (
-            <RealFindingDetailScreen
-              finding={selectedFinding}
-              onBack={() => navigate('results')}
             />
           )}
+
+          {screen === 'config' && (
+            <ScanConfigScreen
+              navigate={navigate}
+              assessmentInput={assessmentInput}
+              onStartAssessment={startAssessment}
+            />
+          )}
+
+          {screen === 'scanning' && (
+            <ScanningScreen
+              navigate={navigate}
+              assessmentInput={assessmentInput}
+              error={assessmentError}
+              onRetry={startAssessment}
+            />
+          )}
+
+          {screen === 'history' && (
+            <HistoryScreen
+              navigate={navigate}
+              onOpenAssessment={openAssessment}
+            />
+          )}
+
+          {screen === 'results' &&
+            assessmentId !== null && (
+              <AssessmentResultsScreen
+                assessmentId={assessmentId}
+                navigate={navigate}
+                onOpenFinding={openFinding}
+              />
+            )}
+
+          {screen === 'results' &&
+            assessmentId === null && (
+              <div
+                style={{
+                  padding: '40px 48px',
+                  color: '#94a3b8',
+                }}
+              >
+                No assessment selected.
+              </div>
+            )}
+
+          {screen === 'detail' &&
+            selectedFinding !== null && (
+              <RealFindingDetailScreen
+                finding={selectedFinding}
+                onBack={() => navigate('results')}
+              />
+            )}
+        </div>
       </main>
     </div>
   )
