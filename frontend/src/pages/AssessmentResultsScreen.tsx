@@ -324,7 +324,7 @@ export default function AssessmentResultsScreen({
             marginBottom: 20,
           }}
         >
-          ΓåÉ Back to Scan History
+          ← Back to Scan History
         </button>
 
         <div
@@ -416,7 +416,7 @@ export default function AssessmentResultsScreen({
           marginBottom: 20,
         }}
       >
-        ΓåÉ Back to Scan History
+        ← Back to Scan History
       </button>
 
 
@@ -471,7 +471,7 @@ export default function AssessmentResultsScreen({
                 color: '#334155',
               }}
             >
-              ΓÇó
+              •
             </span>
 
             <span
@@ -488,7 +488,7 @@ export default function AssessmentResultsScreen({
                 color: '#334155',
               }}
             >
-              ΓÇó
+              •
             </span>
 
             <span
@@ -1216,7 +1216,7 @@ export default function AssessmentResultsScreen({
                             '#334155',
                         }}
                       >
-                        ΓÇó
+                        •
                       </span>
 
                       <span
@@ -1246,7 +1246,7 @@ export default function AssessmentResultsScreen({
                                 '#334155',
                             }}
                           >
-                            ΓÇó
+                            •
                           </span>
 
                           <span
@@ -1273,7 +1273,7 @@ export default function AssessmentResultsScreen({
                                 '#334155',
                             }}
                           >
-                            ΓÇó
+                            •
                           </span>
 
                           <span
@@ -1283,7 +1283,7 @@ export default function AssessmentResultsScreen({
                               fontSize: 9,
                             }}
                           >
-                            Correlated ┬╖{' '}
+                            Correlated ·{' '}
                             {
                               finding.evidence_count
                             }{' '}
@@ -1301,7 +1301,7 @@ export default function AssessmentResultsScreen({
                       paddingTop: 1,
                     }}
                   >
-                    ΓÇ║
+                    ›
                   </span>
                 </div>
               </button>

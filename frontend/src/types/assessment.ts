@@ -2,6 +2,7 @@ export type InputType = 'ZIP' | 'GITHUB'
 
 export type AssessmentStatus =
   | 'completed'
+  | 'partial'
   | 'processing'
   | 'failed'
 
