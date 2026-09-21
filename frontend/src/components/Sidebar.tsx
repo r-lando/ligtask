@@ -9,6 +9,8 @@ export type Screen =
   | 'history'
   | 'results'
   | 'detail'
+  | 'about'
+  | 'privacy'
 
 interface SidebarProps {
   current: Screen
@@ -78,7 +80,7 @@ export default function Sidebar({
     },
     {
       label: 'About',
-      screen: 'home',
+      screen: 'about',
       icon: (
         <svg
           width="16"
@@ -96,7 +98,7 @@ export default function Sidebar({
     },
     {
       label: 'Privacy',
-      screen: 'home',
+      screen: 'privacy',
       icon: (
         <svg
           width="16"
@@ -251,7 +253,7 @@ export default function Sidebar({
 
       <div style={{ marginTop: 12, paddingLeft: 10 }}>
         <span style={{ fontSize: 10, color: '#334155' }}>
-          &copy; 2026 Ligtask
+          &copy; 2026 TALGED
         </span>
       </div>
     </aside>

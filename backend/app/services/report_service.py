@@ -589,7 +589,7 @@ def generate_assessment_html(
     >
 
     <title>
-        Ligtask Security Assessment Report
+        TALGED Security Assessment Report
     </title>
 
     <style>
@@ -680,12 +680,12 @@ def generate_assessment_html(
 <body>
 
     <h1>
-        Ligtask Security Assessment Report
+        TALGED Security Assessment Report
     </h1>
 
     <p class="muted">
-        Privacy-Preserving Repository-Aware
         Security Assessment Platform
+        for Web Application Repositories
     </p>
 
     {partial_warning}
@@ -912,7 +912,7 @@ def generate_assessment_html(
         <strong>Privacy Notice</strong>
 
         <p>
-            Ligtask processes submitted
+            TALGED processes submitted
             repository contents temporarily
             for security assessment purposes.
             Repository source code and uploaded

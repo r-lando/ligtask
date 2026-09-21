@@ -17,8 +17,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Temporary Ligtask files
-ligtask_*/
+# Temporary TALGED files
+talged_*/
 temp/
 tmp/
 

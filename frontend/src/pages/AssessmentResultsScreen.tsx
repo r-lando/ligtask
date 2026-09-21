@@ -1998,7 +1998,7 @@ export default function AssessmentResultsScreen({
         Repository contents were
         processed temporarily for this
         assessment and are not retained
-        by Ligtask. Historical results
+        by TALGED. Historical results
         contain assessment metadata and
         security findings only.
       </div>

@@ -158,10 +158,10 @@ function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
           background: 'linear-gradient(90deg, #7c3aed, #3b82f6)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         }}>
-          Ligtask
+          TALGED
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, margin: '0 0 40px', maxWidth: 420 }}>
-          Ligtask is a privacy-preserving, repository-aware security assessment platform that uses rule-based static code analysis to identify potential vulnerabilities in your web application repositories.
+          TALGED is a security assessment platform for web application repositories that uses rule-based static code analysis to identify potential vulnerabilities in your web application repositories.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 48 }}>
@@ -224,6 +224,109 @@ function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
             </svg>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Screen 1.5: About & Privacy ─────────────────────────────────────────────
+
+function AboutScreen({ navigate }: { navigate: (s: Screen) => void }) {
+  const aboutItems = [
+    {
+      title: 'How It Works',
+      desc: 'Submit a public GitHub repository or a ZIP archive. TALGED runs rule-based static analysis against the source code, dependencies, files, and configuration files, then reports findings by severity.',
+    },
+    {
+      title: 'Assessment Mechanisms',
+      desc: 'Source code analysis, dependency assessment (via CVSS risk correlation), secret detection, and configuration assessment are all applied to each repository.',
+    },
+    {
+      title: 'Data Handling',
+      desc: 'Repository contents are processed temporarily and automatically deleted after assessment. TALGED is a privacy-preserving, repository-aware security assessment platform.',
+    },
+  ]
+
+  return (
+    <div style={{ flex: 1, padding: '48px 56px', overflowY: 'auto' }}>
+      <div style={{ maxWidth: 720 }}>
+        <h1 style={{
+          fontSize: 28, fontWeight: 800, color: '#e2e8f0',
+          margin: '0 0 6px', letterSpacing: '-0.03em',
+        }}>
+          About
+        </h1>
+        <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, margin: '0 0 32px' }}>
+          TALGED is a security assessment platform for web application repositories,
+          built around rule-based static code analysis.
+        </p>
+
+        {aboutItems.map((item) => (
+          <Card key={item.title} style={{ padding: 24, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>
+              {item.title}
+            </div>
+            <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7 }}>
+              {item.desc}
+            </div>
+          </Card>
+        ))}
+
+        <Button onClick={() => navigate('home')} style={{ alignSelf: 'flex-start' }}>
+          Back to Home
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function PrivacyScreen({ navigate }: { navigate: (s: Screen) => void }) {
+  const privacyItems = [
+    {
+      title: 'Temporary Processing',
+      desc: 'Repository contents are processed temporarily during the assessment and are not retained afterwards.',
+    },
+    {
+      title: 'Automatic Deletion',
+      desc: 'Source code and temporary archives are automatically deleted after the assessment completes.',
+    },
+    {
+      title: 'No Permanent Storage',
+      desc: 'TALGED does not permanently store source code or repository contents for later reuse.',
+    },
+    {
+      title: 'Public Repositories Only',
+      desc: 'Only public GitHub repositories or self-submitted ZIP archives can be assessed.',
+    },
+  ]
+
+  return (
+    <div style={{ flex: 1, padding: '48px 56px', overflowY: 'auto' }}>
+      <div style={{ maxWidth: 720 }}>
+        <h1 style={{
+          fontSize: 28, fontWeight: 800, color: '#e2e8f0',
+          margin: '0 0 6px', letterSpacing: '-0.03em',
+        }}>
+          Privacy
+        </h1>
+        <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, margin: '0 0 32px' }}>
+          Your code stays yours. Here is how TALGED protects it.
+        </p>
+
+        {privacyItems.map((item) => (
+          <Card key={item.title} style={{ padding: 24, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>
+              {item.title}
+            </div>
+            <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7 }}>
+              {item.desc}
+            </div>
+          </Card>
+        ))}
+
+        <Button onClick={() => navigate('home')} style={{ alignSelf: 'flex-start' }}>
+          Back to Home
+        </Button>
       </div>
     </div>
   )
@@ -918,7 +1021,7 @@ function ScanConfigScreen({
           }}
         >
           Review the selected repository and the security assessment mechanisms
-          that Ligtask will run.
+          that TALGED will run.
         </p>
 
         <Card
@@ -1012,7 +1115,7 @@ function ScanConfigScreen({
               lineHeight: 1.6,
             }}
           >
-            These mechanisms form the current Ligtask assessment pipeline and
+            These mechanisms form the current TALGED assessment pipeline and
             run automatically as part of the repository assessment.
           </p>
 
@@ -1117,7 +1220,7 @@ function ScanConfigScreen({
               >
                 Repository contents are processed in a temporary workspace and
                 automatically deleted after assessment. Source code and
-                repository archives are not permanently stored by Ligtask.
+                repository archives are not permanently stored by TALGED.
               </div>
             </div>
           </div>
@@ -1229,7 +1332,7 @@ function ScanningScreen({
               margin: '0 0 28px',
             }}
           >
-            Ligtask could not complete the repository assessment.
+            TALGED could not complete the repository assessment.
           </p>
 
           <Card
@@ -1312,7 +1415,7 @@ function ScanningScreen({
             margin: '0 0 32px',
           }}
         >
-          Ligtask is processing and assessing the selected repository.
+          TALGED is processing and assessing the selected repository.
         </p>
 
         <div
@@ -1393,7 +1496,7 @@ function ScanningScreen({
               }}
             >
               The backend currently returns the assessment only after the full
-              pipeline completes, so Ligtask does not display a fabricated
+              pipeline completes, so TALGED does not display a fabricated
               percentage or claim that a specific scanner has finished.
             </div>
 
@@ -1668,6 +1771,14 @@ export default function App() {
         >
           {screen === 'home' && (
             <HomeScreen navigate={navigate} />
+          )}
+
+          {screen === 'about' && (
+            <AboutScreen navigate={navigate} />
+          )}
+
+          {screen === 'privacy' && (
+            <PrivacyScreen navigate={navigate} />
           )}
 
           {screen === 'repo' && (

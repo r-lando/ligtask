@@ -17,11 +17,11 @@ REMEDIATION_RULES = {
             "dedicated non-root user using the "
             "Dockerfile USER instruction."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 
     # -------------------------------------------------
-    # Ligtask configuration findings
+    # TALGED configuration findings
     # -------------------------------------------------
 
     "docker-root-user": {
@@ -36,7 +36,7 @@ REMEDIATION_RULES = {
             "instruction before the final runtime "
             "command."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 
     "docker-latest-tag": {
@@ -50,7 +50,7 @@ REMEDIATION_RULES = {
             "specific version or immutable digest "
             "instead of using the latest tag."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 
     "docker-add-instead-of-copy": {
@@ -63,11 +63,11 @@ REMEDIATION_RULES = {
             "transfers when ADD-specific functionality "
             "is not required."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 
     # -------------------------------------------------
-    # Ligtask secret findings
+    # TALGED secret findings
     # -------------------------------------------------
 
     "generic-secret-assignment": {
@@ -83,7 +83,7 @@ REMEDIATION_RULES = {
             "through an appropriate secret-management "
             "or environment mechanism."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 
     "aws-access-key-id": {
@@ -97,7 +97,7 @@ REMEDIATION_RULES = {
             "valid, and store credentials outside "
             "tracked source files."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 
     "github-token": {
@@ -112,7 +112,7 @@ REMEDIATION_RULES = {
             "an appropriate secret-management "
             "mechanism."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 
     "private-key": {
@@ -127,7 +127,7 @@ REMEDIATION_RULES = {
             "keys in an appropriate protected "
             "location."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 
     "database-connection-string": {
@@ -142,9 +142,61 @@ REMEDIATION_RULES = {
             "it through protected configuration or "
             "secret-management mechanisms."
         ),
-        "reference_type": "Ligtask Rule Guidance",
+        "reference_type": "TALGED Rule Guidance",
     },
 }
+
+
+def get_default_recommended_action(finding, predefined_rule=None):
+    """
+    Provide a short, plain-language action the user
+    can take, separate from the fuller prose
+    recommendation.
+    """
+    if predefined_rule and predefined_rule.get("action"):
+        return (
+            predefined_rule["action"]
+        )
+
+    category = (
+        finding.get(
+            "category",
+            "",
+        )
+        or finding.get(
+            "rule_id",
+            "",
+        )
+    ).upper()
+
+    if category == "DEPENDENCY":
+        return (
+            "Update this dependency to a version "
+            "without the known flaw."
+        )
+
+    if category == "SECRET":
+        return (
+            "Remove the secret from the code and "
+            "rotate it if it may still be active."
+        )
+
+    if category == "SAST":
+        return (
+            "Review the flagged code and apply the "
+            "fix described in the guidance."
+        )
+
+    if category == "CONFIGURATION":
+        return (
+            "Adjust the configuration to the safe "
+            "values described above."
+        )
+
+    return (
+        "Review this finding and follow its "
+        "remediation guidance."
+    )
 
 
 def get_default_description(finding):
@@ -166,7 +218,7 @@ def get_default_description(finding):
 def get_default_recommendation(finding):
     """
     Provide conservative fallback guidance for
-    findings without a predefined Ligtask rule.
+    findings without a predefined TALGED rule.
     """
     category = finding.get(
         "category",
@@ -229,7 +281,7 @@ def determine_guidance_source(
     if predefined_rule:
         return predefined_rule.get(
             "reference_type",
-            "Ligtask Rule Guidance",
+            "TALGED Rule Guidance",
         )
 
     scanner = finding.get(
@@ -247,6 +299,47 @@ def determine_guidance_source(
         return "Correlated Scanner Evidence"
 
     return "Scanner Finding"
+
+
+def get_default_recommended_action(finding):
+    """
+    Provide a short, plain-language action a
+    developer can take right away, kept separate
+    from the longer recommendation prose.
+    """
+    category = finding.get(
+        "category",
+        "",
+    ).upper()
+
+    if category == "DEPENDENCY":
+        return (
+            "Update the affected dependency to a "
+            "secure version."
+        )
+
+    if category == "SAST":
+        return (
+            "Review the flagged code and fix the "
+            "unsafe pattern."
+        )
+
+    if category == "SECRET":
+        return (
+            "Remove the exposed secret and rotate "
+            "it if it is still valid."
+        )
+
+    if category == "CONFIGURATION":
+        return (
+            "Apply the recommended secure "
+            "configuration to the affected file."
+        )
+
+    return (
+        "Review this finding and apply the "
+        "suggested fix."
+    )
 
 
 def enrich_finding(finding):
@@ -295,6 +388,12 @@ def enrich_finding(finding):
 
     enriched["recommendation"] = (
         recommendation
+    )
+
+    enriched["recommended_action"] = (
+        get_default_recommended_action(
+            finding
+        )
     )
 
     enriched["guidance_source"] = (

@@ -6,11 +6,11 @@
 
 
 
-This evaluation measures the behavior of Ligtask's secret-detection mechanism against a frozen set of synthetic repository fixtures with predefined expected outcomes.
+This evaluation measures the behavior of TALGED's secret-detection mechanism against a frozen set of synthetic repository fixtures with predefined expected outcomes.
 
 
 
-The evaluation is limited to the secret-detection rules implemented by Ligtask at the time the benchmark is frozen. It does not measure detection of every possible credential or secret format.
+The evaluation is limited to the secret-detection rules implemented by TALGED at the time the benchmark is frozen. It does not measure detection of every possible credential or secret format.
 
 
 
@@ -50,7 +50,7 @@ The controlled dataset will contain 15 synthetic cases divided into three groups
 
 \- 5 negative-control cases containing structurally related but non-matching content.
 
-\- 5 placeholder-control cases designed to exercise Ligtask's placeholder-suppression behavior.
+\- 5 placeholder-control cases designed to exercise TALGED's placeholder-suppression behavior.
 
 
 
@@ -66,7 +66,7 @@ Each case will be stored in an isolated fixture directory so that its expected r
 
 
 
-Ground truth will be defined before the fixtures are processed by Ligtask.
+Ground truth will be defined before the fixtures are processed by TALGED.
 
 
 
@@ -168,7 +168,7 @@ Synthetic values may exist inside the local controlled fixture used for matching
 
 
 
-This check evaluates Ligtask's intended behavior of reporting the location and type of a potential secret without returning the detected credential value.
+This check evaluates TALGED's intended behavior of reporting the location and type of a potential secret without returning the detected credential value.
 
 
 
@@ -196,8 +196,8 @@ If an execution is invalidated by an infrastructure or execution failure, the re
 
 
 
-Results from this dataset describe performance only for the frozen controlled cases and the secret patterns implemented by Ligtask.
+Results from this dataset describe performance only for the frozen controlled cases and the secret patterns implemented by TALGED.
 
 
 
-They must not be generalized as the detection accuracy of Ligtask for all possible secrets, credentials, repository types, or secret-detection techniques.
+They must not be generalized as the detection accuracy of TALGED for all possible secrets, credentials, repository types, or secret-detection techniques.

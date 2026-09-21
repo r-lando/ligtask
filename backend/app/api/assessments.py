@@ -113,7 +113,7 @@ def download_assessment_pdf(
         )
 
     filename = (
-        f"ligtask-assessment-"
+        f"talged-assessment-"
         f"{assessment_id}.pdf"
     )
 

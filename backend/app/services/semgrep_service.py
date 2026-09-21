@@ -37,7 +37,7 @@ def semgrep_failure(
 def run_semgrep(repository_path: Path):
     """
     Run Semgrep against a repository using the
-    frozen local Ligtask production ruleset with
+    frozen local TALGED production ruleset with
     controlled timeout and failure handling.
     """
 

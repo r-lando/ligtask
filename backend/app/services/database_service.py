@@ -7,7 +7,7 @@ DATABASE_PATH = (
     Path(__file__)
     .resolve()
     .parents[2]
-    / "ligtask.db"
+    / "talged.db"
 )
 
 
@@ -35,7 +35,7 @@ def get_connection():
 
 def initialize_database():
     """
-    Create the Ligtask database tables if
+    Create the TALGED database tables if
     they do not already exist.
 
     The database stores assessment metadata

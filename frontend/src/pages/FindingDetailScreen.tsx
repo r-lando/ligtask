@@ -403,6 +403,45 @@ export default function FindingDetailScreen({
                 'Review the identified security issue and apply an appropriate secure implementation.'}
             </p>
 
+            {finding.recommended_action && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  background:
+                    'rgba(34, 197, 94, 0.08)',
+                  border:
+                    '1px solid rgba(34, 197, 94, 0.2)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: '#4ade80',
+                    margin: '0 0 4px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Recommended Action
+                </div>
+
+                <div
+                  style={{
+                    margin: 0,
+                    color: '#e2e8f0',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {finding.recommended_action}
+                </div>
+              </div>
+            )}
+
 
             {finding.guidance_source && (
               <div
@@ -610,7 +649,7 @@ export default function FindingDetailScreen({
           lineHeight: 1.6,
         }}
       >
-        Ligtask does not retain repository
+        TALGED does not retain repository
         source code after assessment. This
         historical view displays persisted
         assessment metadata and security

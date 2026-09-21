@@ -13,7 +13,7 @@ VALID_SEVERITIES = {
 
 def normalize_severity(severity):
     """
-    Convert scanner severity values into Ligtask's
+    Convert scanner severity values into TALGED's
     standardized severity labels.
     """
     if not severity:
@@ -74,7 +74,7 @@ def normalize_semgrep_findings(
     repository_path: Path
 ):
     """
-    Convert Semgrep findings into Ligtask's
+    Convert Semgrep findings into TALGED's
     common finding format.
     """
     normalized_findings = []
@@ -127,7 +127,7 @@ def normalize_osv_findings(
 ):
     """
     Convert OSV dependency findings into
-    Ligtask's common finding format.
+    TALGED's common finding format.
     """
     normalized_findings = []
 
@@ -200,7 +200,7 @@ def normalize_secret_findings(
     repository_path: Path
 ):
     """
-    Convert secret findings into Ligtask's
+    Convert secret findings into TALGED's
     common finding format.
 
     Secret values are never included.
@@ -213,7 +213,7 @@ def normalize_secret_findings(
     ):
         normalized_findings.append({
             "scanner": (
-                "Ligtask Secret Detector"
+                "TALGED Secret Detector"
             ),
 
             "category": "SECRET",
@@ -260,7 +260,7 @@ def normalize_config_findings(
 ):
     """
     Convert configuration-security findings
-    into Ligtask's common finding format.
+    into TALGED's common finding format.
     """
     normalized_findings = []
 
@@ -270,7 +270,7 @@ def normalize_config_findings(
     ):
         normalized_findings.append({
             "scanner": (
-                "Ligtask Config Scanner"
+                "TALGED Config Scanner"
             ),
 
             "category": "CONFIGURATION",

@@ -11,7 +11,7 @@ def test_api_root():
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {
-        "name": "Ligtask",
+        "name": "TALGED",
         "status": "running",
     }
 
@@ -143,7 +143,7 @@ def test_api_get_pdf_report_success(monkeypatch):
         "cache-control", ""
     )
     assert (
-        'attachment; filename="ligtask-assessment-sample-id.pdf"'
+        'attachment; filename="talged-assessment-sample-id.pdf"'
         in response.headers.get("content-disposition", "")
     )
 

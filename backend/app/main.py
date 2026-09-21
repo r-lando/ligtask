@@ -14,7 +14,7 @@ initialize_database()
 
 
 app = FastAPI(
-    title="Ligtask API",
+    title="TALGED API",
     description=(
         "Repository-Aware Security "
         "Assessment Platform"
@@ -43,7 +43,7 @@ app.include_router(
 @app.get("/")
 def root():
     return {
-        "name": "Ligtask",
+        "name": "TALGED",
         "status": "running",
     }
 

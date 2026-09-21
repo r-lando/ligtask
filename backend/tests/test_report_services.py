@@ -58,7 +58,7 @@ def make_sample_assessment(*, status="completed", finding_overrides=None):
         },
         {
             "id": 3,
-            "scanner": "Ligtask Secret Detector",
+            "scanner": "TALGED Secret Detector",
             "category": "SECRET",
             "rule_id": "generic-secret-assignment",
             "title": "Potential Secret Detected",
@@ -78,11 +78,11 @@ def make_sample_assessment(*, status="completed", finding_overrides=None):
             "ecosystem": None,
             "correlated": False,
             "evidence_count": 1,
-            "sources": ["Ligtask Secret Detector"],
+            "sources": ["TALGED Secret Detector"],
             "source_rule_ids": ["generic-secret-assignment"],
             "description": "Hardcoded secret detected.",
             "recommendation": "Move secret to secure environment configuration.",
-            "guidance_source": "Ligtask Guidance",
+            "guidance_source": "TALGED Guidance",
         },
     ]
 
@@ -127,7 +127,7 @@ def make_sample_assessment(*, status="completed", finding_overrides=None):
             },
             "secret": {
                 "status": "completed",
-                "scanner": "Ligtask",
+                "scanner": "TALGED",
                 "findings_count": 1,
                 "error": None,
             },
@@ -135,7 +135,7 @@ def make_sample_assessment(*, status="completed", finding_overrides=None):
                 "status": (
                     "partial" if status == "partial" else "completed"
                 ),
-                "scanner": "Ligtask",
+                "scanner": "TALGED",
                 "findings_count": 0,
                 "error": (
                     "One file failed" if status == "partial" else None

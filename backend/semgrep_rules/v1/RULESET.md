@@ -1,11 +1,11 @@
-﻿# Ligtask Semgrep Ruleset v1
+﻿# TALGED Semgrep Ruleset v1
 
 ## Purpose
 
 This directory contains the frozen Semgrep rule configuration used by
-Ligtask for production Static Application Security Testing (SAST).
+TALGED for production Static Application Security Testing (SAST).
 
-Ligtask uses a local, versioned ruleset instead of Semgrep's `--config auto`
+TALGED uses a local, versioned ruleset instead of Semgrep's `--config auto`
 configuration so that repository assessments use a reproducible rule
 configuration.
 
@@ -19,7 +19,7 @@ The production ruleset contains security-focused rules for:
 - PHP
 
 HTML and CSS may be identified during repository profiling but are not
-included as primary SAST languages in Ligtask v1.
+included as primary SAST languages in TALGED v1.
 
 ## Rule Selection
 

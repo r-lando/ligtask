@@ -92,6 +92,7 @@ export interface AssessmentFinding {
   description: string
   recommendation: string
   guidance_source: string
+  recommended_action: string
 }
 
 export interface AssessmentDetail

@@ -6,7 +6,7 @@
 
 
 
-The formal secret-detection evaluation assessed Ligtask's production
+The formal secret-detection evaluation assessed TALGED's production
 
 secret-detection mechanism using the frozen controlled synthetic benchmark
 
@@ -204,7 +204,7 @@ All 15 cases completed with `scan\_status` equal to `completed`.
 
 
 
-Within the frozen 15-case controlled synthetic dataset, Ligtask achieved
+Within the frozen 15-case controlled synthetic dataset, TALGED achieved
 
 precision, recall, specificity, accuracy, and F1-score values of 1.0000.
 

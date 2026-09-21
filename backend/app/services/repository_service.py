@@ -417,7 +417,7 @@ def run_assessment_pipeline(
     extract_dir,
 ):
     """
-    Run the common Ligtask repository
+    Run the common TALGED repository
     security assessment pipeline.
 
     Both ZIP uploads and public GitHub
@@ -590,7 +590,7 @@ def run_assessment_pipeline(
     if secret_scan_status == "completed":
         secret_status = {
             "status": "completed",
-            "scanner": "Ligtask",
+            "scanner": "TALGED",
             "findings_count": len(
                 normalized_secret_findings
             ),
@@ -600,7 +600,7 @@ def run_assessment_pipeline(
     elif secret_scan_status == "completed_with_errors":
         secret_status = {
             "status": "partial",
-            "scanner": "Ligtask",
+            "scanner": "TALGED",
             "findings_count": len(
                 normalized_secret_findings
             ),
@@ -613,7 +613,7 @@ def run_assessment_pipeline(
     else:
         secret_status = {
             "status": "failed",
-            "scanner": "Ligtask",
+            "scanner": "TALGED",
             "findings_count": len(
                 normalized_secret_findings
             ),
@@ -659,7 +659,7 @@ def run_assessment_pipeline(
     if config_scan_status == "completed":
         configuration_status = {
             "status": "completed",
-            "scanner": "Ligtask",
+            "scanner": "TALGED",
             "findings_count": len(
                 normalized_config_findings
             ),
@@ -669,7 +669,7 @@ def run_assessment_pipeline(
     elif config_scan_status == "completed_with_errors":
         configuration_status = {
             "status": "partial",
-            "scanner": "Ligtask",
+            "scanner": "TALGED",
             "findings_count": len(
                 normalized_config_findings
             ),
@@ -683,7 +683,7 @@ def run_assessment_pipeline(
     else:
         configuration_status = {
             "status": "failed",
-            "scanner": "Ligtask",
+            "scanner": "TALGED",
             "findings_count": len(
                 normalized_config_findings
             ),
@@ -844,7 +844,7 @@ def finalize_assessment(
 ):
     """
     Persist and return a completed or partial
-    Ligtask assessment using safe assessment data.
+    TALGED assessment using safe assessment data.
     """
     completed_at = utc_now_iso()
 
@@ -1135,7 +1135,7 @@ def finalize_assessment(
             ),
 
             # -----------------------------
-            # Consolidated Ligtask analysis
+            # Consolidated TALGED analysis
             # -----------------------------
 
             "consolidated_analysis": {
@@ -1253,7 +1253,7 @@ async def process_repository(
 
     temp_dir = Path(
         tempfile.mkdtemp(
-            prefix="ligtask_"
+            prefix="talged_"
         )
     )
 
@@ -1379,7 +1379,7 @@ def process_github_repository(
 
     temp_dir = Path(
         tempfile.mkdtemp(
-            prefix="ligtask_github_"
+            prefix="talged_github_"
         )
     )
 

@@ -2,11 +2,11 @@
 
 ## Evaluation Scope
 
-This controlled evaluation examined Ligtask's dependency assessment mechanism for npm dependencies represented by exact package and version information in `package-lock.json`.
+This controlled evaluation examined TALGED's dependency assessment mechanism for npm dependencies represented by exact package and version information in `package-lock.json`.
 
-The frozen dataset consisted of 10 dependency cases. Ground truth was collected independently from the OSV `/v1/query` endpoint before the formal Ligtask execution. The frozen ground truth classified 7 cases as vulnerable and 3 cases as non-vulnerable.
+The frozen dataset consisted of 10 dependency cases. Ground truth was collected independently from the OSV `/v1/query` endpoint before the formal TALGED execution. The frozen ground truth classified 7 cases as vulnerable and 3 cases as non-vulnerable.
 
-Ligtask's production dependency assessment implementation was then executed against each frozen fixture using its normal dependency collection, OSV batch-query, vulnerability-detail retrieval, and finding-generation workflow.
+TALGED's production dependency assessment implementation was then executed against each frozen fixture using its normal dependency collection, OSV batch-query, vulnerability-detail retrieval, and finding-generation workflow.
 
 ## Formal Execution
 
@@ -65,6 +65,6 @@ The raw result directory is excluded from Git. This document preserves the princ
 
 ## Interpretation and Limitation
 
-The formal result demonstrates complete detection of the expected vulnerabilities within this frozen 10-case controlled npm/OSV dataset. It must not be interpreted as evidence that Ligtask achieves 100% vulnerability-detection accuracy across arbitrary repositories, dependency ecosystems, or vulnerability classes.
+The formal result demonstrates complete detection of the expected vulnerabilities within this frozen 10-case controlled npm/OSV dataset. It must not be interpreted as evidence that TALGED achieves 100% vulnerability-detection accuracy across arbitrary repositories, dependency ecosystems, or vulnerability classes.
 
 The evaluated implementation scope is limited to npm dependencies extracted from `package-lock.json` and assessed through exact package/version matching against OSV. Because OSV is a continuously updated vulnerability database, results obtained at another time may differ as vulnerability records are added, modified, or withdrawn.
