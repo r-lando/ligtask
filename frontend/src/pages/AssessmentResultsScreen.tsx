@@ -1,4 +1,4 @@
-﻿import {
+import {
   useEffect,
   useLayoutEffect,
   useRef,
@@ -214,8 +214,12 @@ export default function AssessmentResultsScreen({
   const [error, setError] =
     useState<string | null>(null)
 
-  const [reloadAttempt, setReloadAttempt] =
-    useState(0)
+  const [
+    severityFilter,
+    setSeverityFilter,
+  ] = useState<FindingSeverity | 'ALL'>(
+    'ALL',
+  )
 
 
   /*
@@ -291,7 +295,7 @@ export default function AssessmentResultsScreen({
     return () => {
       active = false
     }
-  }, [assessmentId, reloadAttempt])
+  }, [assessmentId])
 
 
   if (loading) {
@@ -340,7 +344,7 @@ export default function AssessmentResultsScreen({
             marginBottom: 20,
           }}
         >
-          â† Back to Scan History
+          ← Back to Scan History
         </button>
 
         <div
@@ -357,76 +361,13 @@ export default function AssessmentResultsScreen({
         >
           {error ??
             'Assessment could not be found.'}
-
-          <div
-            style={{
-              marginTop: 14,
-              display: 'flex',
-              gap: 8,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() =>
-                setReloadAttempt(
-                  (n) => n + 1,
-                )
-              }
-              style={{
-                display:
-                  'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 14px',
-                borderRadius: 7,
-                border: 'none',
-                background:
-                  'var(--accent-purple)',
-                color: '#ffffff',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Retry
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate('history')
-              }
-              style={{
-                display:
-                  'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 14px',
-                borderRadius: 7,
-                border:
-                  '1px solid var(--border)',
-                background:
-                  'transparent',
-                color: '#94a3b8',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              â† Back to History
-            </button>
-          </div>
         </div>
       </div>
     )
   }
 
 
-  const [searchQuery, setSearchQuery] =
-    useState('')
-
-
-  const severityFilteredFindings =
+  const filteredFindings =
     severityFilter === 'ALL'
       ? assessment.findings
       : assessment.findings.filter(
@@ -434,42 +375,6 @@ export default function AssessmentResultsScreen({
             finding.severity ===
             severityFilter,
         )
-
-  const normalizedQuery =
-    searchQuery.trim().toLowerCase()
-
-  const searchMatches = (
-    finding: AssessmentFinding,
-  ) => {
-    if (normalizedQuery === '') {
-      return true
-    }
-
-    const haystacks = [
-      finding.title,
-      finding.rule_id,
-      finding.package_name,
-      finding.package_version,
-      finding.cve_id,
-      finding.file_path,
-      finding.recommendation,
-      finding.detail,
-      finding.recommended_action,
-    ]
-
-    return haystacks.some(
-      (field) =>
-        typeof field === 'string' &&
-        field.toLowerCase().includes(
-          normalizedQuery,
-        ),
-    )
-  }
-
-  const filteredFindings =
-    severityFilteredFindings.filter(
-      searchMatches,
-    )
 
 
   const totalFindings =
@@ -566,7 +471,7 @@ export default function AssessmentResultsScreen({
           marginBottom: 20,
         }}
       >
-        â† Back to Scan History
+        ← Back to Scan History
       </button>
 
 
@@ -621,7 +526,7 @@ export default function AssessmentResultsScreen({
                 color: '#334155',
               }}
             >
-              â€¢
+              •
             </span>
 
             <span
@@ -638,7 +543,7 @@ export default function AssessmentResultsScreen({
                 color: '#334155',
               }}
             >
-              â€¢
+              •
             </span>
 
             <span
@@ -830,7 +735,7 @@ export default function AssessmentResultsScreen({
                     }}
                   >
                     {mechanism.scanner}
-                    {' Â· '}
+                    {' · '}
                     {mechanism.findings_count}{' '}
                     findings
                   </div>
@@ -982,7 +887,7 @@ export default function AssessmentResultsScreen({
             overflow: 'hidden',
             display: 'flex',
             background:
-              'var(--bg-surface-2)',
+              'rgba(255, 255, 255, 0.05)',
             marginBottom: 16,
           }}
         >
@@ -1227,7 +1132,7 @@ export default function AssessmentResultsScreen({
                   overflow: 'hidden',
                   display: 'flex',
                   background:
-                    'var(--bg-surface-2)',
+                    'rgba(255, 255, 255, 0.05)',
                   marginBottom: 10,
                 }}
               >
@@ -1336,7 +1241,7 @@ export default function AssessmentResultsScreen({
               gap: 12,
               paddingTop: 12,
               borderTop:
-                '1px solid var(--bg-surface-3)',
+                '1px solid rgba(255, 255, 255, 0.06)',
             }}
           >
             <div>
@@ -1583,7 +1488,7 @@ export default function AssessmentResultsScreen({
                 fontSize: 14,
               }}
             >
-              â†’
+              →
             </span>
 
             <div
@@ -1615,7 +1520,7 @@ export default function AssessmentResultsScreen({
                   assessment
                     .duplicate_findings_merged
                 }{' '}
-                merged Â·{' '}
+                merged ·{' '}
                 {
                   assessment
                     .correlated_groups
@@ -1630,7 +1535,7 @@ export default function AssessmentResultsScreen({
                 fontSize: 14,
               }}
             >
-              â†’
+              →
             </span>
 
             <div
@@ -1734,7 +1639,7 @@ export default function AssessmentResultsScreen({
                           height: 6,
                           borderRadius: 3,
                           background:
-                            'var(--bg-surface-3)',
+                            'rgba(255, 255, 255, 0.06)',
                           overflow:
                             'hidden',
                         }}
@@ -1817,42 +1722,6 @@ export default function AssessmentResultsScreen({
             consolidated findings
           </div>
         </div>
-
-
-        {assessment.findings.length >
-          0 && (
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) =>
-              setSearchQuery(
-                event.target.value,
-              )
-            }
-            placeholder="Search findingsâ€¦"
-            aria-label="Search findings"
-            style={{
-              flex: '0 1 260px',
-              maxWidth: 260,
-              padding:
-                '9px 12px 9px 34px',
-              borderRadius: 10,
-              border:
-                '1px solid var(--border)',
-              background:
-                'var(--bg-surface)',
-              color:
-                'var(--text-primary)',
-              fontSize: 12,
-              outline: 'none',
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.5' y2='16.5'/%3E%3C/svg%3E\")",
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition:
-                '12px center',
-            }}
-          />
-        )}
 
 
         {severityFilter !== 'ALL' && (
@@ -2017,7 +1886,7 @@ export default function AssessmentResultsScreen({
                             '#334155',
                         }}
                       >
-                        â€¢
+                        •
                       </span>
 
                       <span
@@ -2047,7 +1916,7 @@ export default function AssessmentResultsScreen({
                                 '#334155',
                             }}
                           >
-                            â€¢
+                            •
                           </span>
 
                           <span
@@ -2074,7 +1943,7 @@ export default function AssessmentResultsScreen({
                                 '#334155',
                             }}
                           >
-                            â€¢
+                            •
                           </span>
 
                           <span
@@ -2084,7 +1953,7 @@ export default function AssessmentResultsScreen({
                               fontSize: 9,
                             }}
                           >
-                            Correlated Â·{' '}
+                            Correlated ·{' '}
                             {
                               finding.evidence_count
                             }{' '}
@@ -2102,7 +1971,7 @@ export default function AssessmentResultsScreen({
                       paddingTop: 1,
                     }}
                   >
-                    â€º
+                    ›
                   </span>
                 </div>
               </button>

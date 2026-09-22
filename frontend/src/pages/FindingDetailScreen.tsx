@@ -442,50 +442,6 @@ export default function FindingDetailScreen({
               </div>
             )}
 
-            {!finding.recommended_action && (
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: '10px 14px',
-                  borderRadius: 8,
-                  background:
-                    'rgba(148, 163, 184, 0.06)',
-                  border:
-                    '1px dashed rgba(148, 163, 184, 0.25)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: '#94a3b8',
-                    margin: '0 0 4px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Recommended Action
-                </div>
-
-                <div
-                  style={{
-                    margin: 0,
-                    color: '#94a3b8',
-                    fontSize: 12,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  This finding predates the
-                  Recommended Action feature, so
-                  no actionable guidance is
-                  available for it yet. Re-run a
-                  scan to backfill the
-                  repository's findings with
-                  remediation guidance.
-                </div>
-              </div>
-            )}
-
 
             {finding.guidance_source && (
               <div

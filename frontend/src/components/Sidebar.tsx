@@ -15,8 +15,6 @@ export type Screen =
 interface SidebarProps {
   current: Screen
   navigate: (screen: Screen) => void
-  theme?: 'night' | 'day'
-  onToggleTheme?: () => void
 }
 
 interface SidebarItem {
@@ -200,63 +198,6 @@ export default function Sidebar({
           )
         })}
       </nav>
-
-      {onToggleTheme ? (
-        <button
-          onClick={onToggleTheme}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            padding: '9px 10px',
-            marginTop: 4,
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            color: 'var(--text-secondary)',
-            fontSize: 12,
-            cursor: 'pointer',
-          }}
-        >
-          <span>
-            {theme === 'day'
-              ? 'Night mode'
-              : 'Day mode'}
-          </span>
-
-          <span
-            style={{
-              display: 'inline-block',
-              width: 30,
-              height: 17,
-              borderRadius: 999,
-              background:
-                theme === 'day'
-                  ? 'var(--accent-purple)'
-                  : 'rgba(124, 58, 237, 0.28)',
-              position: 'relative',
-            }}
-          >
-            <span
-              style={{
-                position: 'absolute',
-                top: 2,
-                left:
-                  theme === 'day'
-                    ? 15
-                    : 2,
-                width: 13,
-                height: 13,
-                borderRadius: '50%',
-                background: '#fff',
-                transition:
-                  'left 150ms ease',
-              }}
-            />
-          </span>
-        </button>
-      ) : null}
 
       <div
         style={{
