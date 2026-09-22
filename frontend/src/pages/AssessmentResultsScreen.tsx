@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useLayoutEffect,
   useRef,
@@ -340,7 +340,7 @@ export default function AssessmentResultsScreen({
             marginBottom: 20,
           }}
         >
-          ← Back to Scan History
+          â† Back to Scan History
         </button>
 
         <div
@@ -413,7 +413,7 @@ export default function AssessmentResultsScreen({
                 cursor: 'pointer',
               }}
             >
-              ← Back to History
+              â† Back to History
             </button>
           </div>
         </div>
@@ -566,7 +566,7 @@ export default function AssessmentResultsScreen({
           marginBottom: 20,
         }}
       >
-        ← Back to Scan History
+        â† Back to Scan History
       </button>
 
 
@@ -621,7 +621,7 @@ export default function AssessmentResultsScreen({
                 color: '#334155',
               }}
             >
-              •
+              â€¢
             </span>
 
             <span
@@ -638,7 +638,7 @@ export default function AssessmentResultsScreen({
                 color: '#334155',
               }}
             >
-              •
+              â€¢
             </span>
 
             <span
@@ -830,7 +830,7 @@ export default function AssessmentResultsScreen({
                     }}
                   >
                     {mechanism.scanner}
-                    {' · '}
+                    {' Â· '}
                     {mechanism.findings_count}{' '}
                     findings
                   </div>
@@ -982,7 +982,7 @@ export default function AssessmentResultsScreen({
             overflow: 'hidden',
             display: 'flex',
             background:
-              'rgba(255, 255, 255, 0.05)',
+              'var(--bg-surface-2)',
             marginBottom: 16,
           }}
         >
@@ -1227,7 +1227,7 @@ export default function AssessmentResultsScreen({
                   overflow: 'hidden',
                   display: 'flex',
                   background:
-                    'rgba(255, 255, 255, 0.05)',
+                    'var(--bg-surface-2)',
                   marginBottom: 10,
                 }}
               >
@@ -1336,7 +1336,7 @@ export default function AssessmentResultsScreen({
               gap: 12,
               paddingTop: 12,
               borderTop:
-                '1px solid rgba(255, 255, 255, 0.06)',
+                '1px solid var(--bg-surface-3)',
             }}
           >
             <div>
@@ -1583,7 +1583,7 @@ export default function AssessmentResultsScreen({
                 fontSize: 14,
               }}
             >
-              →
+              â†’
             </span>
 
             <div
@@ -1615,7 +1615,7 @@ export default function AssessmentResultsScreen({
                   assessment
                     .duplicate_findings_merged
                 }{' '}
-                merged ·{' '}
+                merged Â·{' '}
                 {
                   assessment
                     .correlated_groups
@@ -1630,7 +1630,7 @@ export default function AssessmentResultsScreen({
                 fontSize: 14,
               }}
             >
-              →
+              â†’
             </span>
 
             <div
@@ -1734,7 +1734,7 @@ export default function AssessmentResultsScreen({
                           height: 6,
                           borderRadius: 3,
                           background:
-                            'rgba(255, 255, 255, 0.06)',
+                            'var(--bg-surface-3)',
                           overflow:
                             'hidden',
                         }}
@@ -1829,7 +1829,7 @@ export default function AssessmentResultsScreen({
                 event.target.value,
               )
             }
-            placeholder="Search findings…"
+            placeholder="Search findingsâ€¦"
             aria-label="Search findings"
             style={{
               flex: '0 1 260px',
@@ -2017,7 +2017,7 @@ export default function AssessmentResultsScreen({
                             '#334155',
                         }}
                       >
-                        •
+                        â€¢
                       </span>
 
                       <span
@@ -2047,7 +2047,7 @@ export default function AssessmentResultsScreen({
                                 '#334155',
                             }}
                           >
-                            •
+                            â€¢
                           </span>
 
                           <span
@@ -2074,7 +2074,7 @@ export default function AssessmentResultsScreen({
                                 '#334155',
                             }}
                           >
-                            •
+                            â€¢
                           </span>
 
                           <span
@@ -2084,7 +2084,7 @@ export default function AssessmentResultsScreen({
                               fontSize: 9,
                             }}
                           >
-                            Correlated ·{' '}
+                            Correlated Â·{' '}
                             {
                               finding.evidence_count
                             }{' '}
@@ -2102,7 +2102,7 @@ export default function AssessmentResultsScreen({
                       paddingTop: 1,
                     }}
                   >
-                    ›
+                    â€º
                   </span>
                 </div>
               </button>
