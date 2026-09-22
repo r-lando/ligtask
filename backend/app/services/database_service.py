@@ -172,6 +172,8 @@ def initialize_database():
 
                 guidance_source TEXT,
 
+                recommended_action TEXT,
+
                 FOREIGN KEY (
                     assessment_id
                 )
@@ -230,6 +232,26 @@ def initialize_database():
                 """
                 ALTER TABLE assessments
                 ADD COLUMN mechanism_statuses_json TEXT;
+                """
+            )
+
+        finding_columns = {
+            row["name"]
+            for row in cursor.execute(
+                """
+                PRAGMA table_info(findings);
+                """
+            ).fetchall()
+        }
+
+        if (
+            "recommended_action"
+            not in finding_columns
+        ):
+            cursor.execute(
+                """
+                ALTER TABLE findings
+                ADD COLUMN recommended_action TEXT;
                 """
             )
 
@@ -466,9 +488,11 @@ def save_assessment(
                     source_rule_ids_json,
                     description,
                     recommendation,
-                    guidance_source
+                    guidance_source,
+                    recommended_action
                 )
                 VALUES (
+                    ?,
                     ?,
                     ?,
                     ?,
@@ -550,6 +574,9 @@ def save_assessment(
                     ),
                     finding.get(
                         "guidance_source"
+                    ),
+                    finding.get(
+                        "recommended_action"
                     ),
                 ),
             )
@@ -725,6 +752,10 @@ def row_to_finding(row):
         ),
         "guidance_source": (
             row["guidance_source"]
+        ),
+
+        "recommended_action": (
+            row["recommended_action"]
         ),
     }
 

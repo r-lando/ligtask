@@ -214,12 +214,8 @@ export default function AssessmentResultsScreen({
   const [error, setError] =
     useState<string | null>(null)
 
-  const [
-    severityFilter,
-    setSeverityFilter,
-  ] = useState<FindingSeverity | 'ALL'>(
-    'ALL',
-  )
+  const [reloadAttempt, setReloadAttempt] =
+    useState(0)
 
 
   /*
@@ -295,7 +291,7 @@ export default function AssessmentResultsScreen({
     return () => {
       active = false
     }
-  }, [assessmentId])
+  }, [assessmentId, reloadAttempt])
 
 
   if (loading) {
@@ -361,6 +357,65 @@ export default function AssessmentResultsScreen({
         >
           {error ??
             'Assessment could not be found.'}
+
+          <div
+            style={{
+              marginTop: 14,
+              display: 'flex',
+              gap: 8,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setReloadAttempt(
+                  (n) => n + 1,
+                )
+              }
+              style={{
+                display:
+                  'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 14px',
+                borderRadius: 7,
+                border: 'none',
+                background:
+                  'var(--accent-purple)',
+                color: '#ffffff',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Retry
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate('history')
+              }
+              style={{
+                display:
+                  'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 14px',
+                borderRadius: 7,
+                border:
+                  '1px solid var(--border)',
+                background:
+                  'transparent',
+                color: '#94a3b8',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              ← Back to History
+            </button>
+          </div>
         </div>
       </div>
     )

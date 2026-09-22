@@ -1662,6 +1662,42 @@ function getErrorMessage(error: unknown) {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home')
 
+  /*
+   * Night / day theme.
+   *
+   * Persisted to localStorage and applied via
+   * a data-theme attribute on the document
+   * root, which the stylesheet keys on
+   * (darker shades are the default).
+   */
+  const [theme, setTheme] = useState<
+    'night' | 'day'
+  >(() => {
+    const stored =
+      localStorage.getItem(
+        'ligtask-theme',
+      )
+
+    return stored === 'day'
+      ? 'day'
+      : 'night'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      'data-theme',
+      theme === 'day'
+        ? 'light'
+        : 'dark',
+    )
+
+    localStorage.setItem(
+      'ligtask-theme',
+      theme,
+    )
+  }, [theme])
+
+
   const [assessmentInput, setAssessmentInput] =
     useState<AssessmentInput | null>(null)
 
@@ -1670,6 +1706,7 @@ export default function App() {
 
   const [selectedFinding, setSelectedFinding] =
     useState<AssessmentFinding | null>(null)
+
 
   const [assessmentError, setAssessmentError] =
     useState('')
@@ -1680,6 +1717,52 @@ export default function App() {
   const navigate = (nextScreen: Screen) => {
     setScreen(nextScreen)
   }
+
+  /*
+   * Escape-to-back keyboard navigation:
+   *
+   * - Finding Detail   -> Assessment Results
+   * - Assessment Results -> Scan History
+   *
+   * Mirrors the waiter-style escape affordance
+   * native apps provide. Releasing Escape is a
+   * no-op so users can hold the key between
+   * screens.
+   */
+  useEffect(() => {
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
+      if (
+        event.key !== 'Escape'
+      ) {
+        return
+      }
+
+      if (screen === 'detail') {
+        navigate('results')
+        setSelectedFinding(null)
+        return
+      }
+
+      if (screen === 'results') {
+        navigate('history')
+        return
+      }
+    }
+
+    window.addEventListener(
+      'keydown',
+      handleKeyDown,
+    )
+
+    return () =>
+      window.removeEventListener(
+        'keydown',
+        handleKeyDown,
+      )
+  }, [screen])
+
 
   const openAssessment = (id: string) => {
     setAssessmentId(id)
@@ -1749,6 +1832,14 @@ export default function App() {
       <Sidebar
         current={screen}
         navigate={navigate}
+        theme={theme}
+        onToggleTheme={() =>
+          setTheme(
+            theme === 'night'
+              ? 'day'
+              : 'night',
+          )
+        }
       />
 
       <main
