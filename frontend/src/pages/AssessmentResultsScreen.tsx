@@ -422,7 +422,11 @@ export default function AssessmentResultsScreen({
   }
 
 
-  const filteredFindings =
+  const [searchQuery, setSearchQuery] =
+    useState('')
+
+
+  const severityFilteredFindings =
     severityFilter === 'ALL'
       ? assessment.findings
       : assessment.findings.filter(
@@ -430,6 +434,42 @@ export default function AssessmentResultsScreen({
             finding.severity ===
             severityFilter,
         )
+
+  const normalizedQuery =
+    searchQuery.trim().toLowerCase()
+
+  const searchMatches = (
+    finding: AssessmentFinding,
+  ) => {
+    if (normalizedQuery === '') {
+      return true
+    }
+
+    const haystacks = [
+      finding.title,
+      finding.rule_id,
+      finding.package_name,
+      finding.package_version,
+      finding.cve_id,
+      finding.file_path,
+      finding.recommendation,
+      finding.detail,
+      finding.recommended_action,
+    ]
+
+    return haystacks.some(
+      (field) =>
+        typeof field === 'string' &&
+        field.toLowerCase().includes(
+          normalizedQuery,
+        ),
+    )
+  }
+
+  const filteredFindings =
+    severityFilteredFindings.filter(
+      searchMatches,
+    )
 
 
   const totalFindings =
@@ -1777,6 +1817,42 @@ export default function AssessmentResultsScreen({
             consolidated findings
           </div>
         </div>
+
+
+        {assessment.findings.length >
+          0 && (
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) =>
+              setSearchQuery(
+                event.target.value,
+              )
+            }
+            placeholder="Search findings…"
+            aria-label="Search findings"
+            style={{
+              flex: '0 1 260px',
+              maxWidth: 260,
+              padding:
+                '9px 12px 9px 34px',
+              borderRadius: 10,
+              border:
+                '1px solid var(--border)',
+              background:
+                'var(--bg-surface)',
+              color:
+                'var(--text-primary)',
+              fontSize: 12,
+              outline: 'none',
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.5' y2='16.5'/%3E%3C/svg%3E\")",
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition:
+                '12px center',
+            }}
+          />
+        )}
 
 
         {severityFilter !== 'ALL' && (
