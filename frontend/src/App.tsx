@@ -247,6 +247,24 @@ function AboutScreen({ navigate }: { navigate: (s: Screen) => void }) {
     },
   ]
 
+  const contactLinks = [
+    {
+      label: 'GITHUB',
+      value: 'github.com/r-lando',
+      href: 'https://github.com/r-lando',
+    },
+    {
+      label: 'LINKEDIN',
+      value: 'in/rolando-vinas',
+      href: 'https://linkedin.com/in/rolando-vinas',
+    },
+    {
+      label: 'EMAIL',
+      value: 'rolandovinas25@gmail.com',
+      href: 'mailto:rolandovinas25@gmail.com',
+    },
+  ]
+
   return (
     <div style={{ flex: 1, padding: '48px 56px', overflowY: 'auto' }}>
       <div style={{ maxWidth: 720 }}>
@@ -271,6 +289,58 @@ function AboutScreen({ navigate }: { navigate: (s: Screen) => void }) {
             </div>
           </Card>
         ))}
+
+        <Card style={{ padding: 24, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>
+            Let&rsquo;s work together
+          </div>
+          <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7, marginBottom: 18 }}>
+            For a project, an opportunity, or simply a good technology
+            conversation&mdash;my inbox is open.
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {contactLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                target={
+                  link.label === 'EMAIL'
+                    ? undefined
+                    : '_blank'
+                }
+                rel="noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 12,
+                  textDecoration: 'none',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: '#64748b',
+                    letterSpacing: '0.08em',
+                    minWidth: 74,
+                  }}
+                >
+                  {link.label}
+                </span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: '#a78bfa',
+                  }}
+                >
+                  {link.value}
+                </span>
+              </a>
+            ))}
+          </div>
+        </Card>
 
         <Button onClick={() => navigate('home')} style={{ alignSelf: 'flex-start' }}>
           Back to Home
