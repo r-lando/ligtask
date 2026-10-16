@@ -186,7 +186,7 @@ def build_mechanism_rows(
                         mechanism.get(
                             "error"
                         )
-                        or "None"
+                        or mechanism.get("note") or "None"
                     )}
                 </td>
             </tr>
@@ -480,7 +480,7 @@ def build_finding_details(findings):
                 </p>
 
                 <p>
-                    <strong>Evidence Count:</strong>
+                    <strong>{'Occurrences' if finding.get('category') == 'DEPENDENCY' else 'Evidence Count'}:</strong>
                     {safe_text(
                         finding.get(
                             "evidence_count",

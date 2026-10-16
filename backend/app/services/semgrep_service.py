@@ -1,5 +1,6 @@
 import json
 import subprocess
+import re
 from pathlib import Path
 
 
@@ -10,6 +11,22 @@ SEMGREP_RULES_PATH = (
     / "semgrep_rules"
     / "v1"
 )
+
+
+def has_django_evidence(repository_path):
+    """Require a Python Django import, not a generic HTML form."""
+    for path in Path(repository_path).rglob("*.py"):
+        if any(part in {".venv", "venv", "node_modules", ".git"} for part in path.parts):
+            continue
+        try:
+            if path.stat().st_size <= 2 * 1024 * 1024 and re.search(
+                r"(?m)^\s*(?:from\s+django(?:\.|\s)|import\s+django\b)",
+                path.read_text(encoding="utf-8"),
+            ):
+                return True
+        except (OSError, UnicodeError):
+            continue
+    return False
 
 
 def semgrep_failure(
@@ -121,11 +138,17 @@ def run_semgrep(repository_path: Path):
         )
 
     findings = []
+    django_evidence = has_django_evidence(repository_path)
+    excluded_framework_matches = 0
 
     for finding in semgrep_output.get(
         "results",
         [],
     ):
+        if (str(finding.get("check_id", "")).endswith("django-no-csrf-token")
+                and not django_evidence):
+            excluded_framework_matches += 1
+            continue
         findings.append(
             {
                 "rule_id": finding.get(
@@ -157,6 +180,7 @@ def run_semgrep(repository_path: Path):
 
     return {
         "success": True,
+        "note": (f"{excluded_framework_matches} Django form-rule matches excluded: no Python Django import found in submitted files." if excluded_framework_matches else None),
         "findings_count": len(findings),
         "findings": findings,
         "error": None,

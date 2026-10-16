@@ -466,6 +466,7 @@ def run_assessment_pipeline(
                 normalized_sast_findings
             ),
             "error": None,
+            "note": semgrep_results.get("note"),
         }
 
     elif semgrep_results.get(
@@ -529,6 +530,11 @@ def run_assessment_pipeline(
                 normalized_dependency_findings
             ),
             "error": None,
+            "note": (
+                "No software libraries were checked. TALGED currently reads npm package-lock.json files."
+                if dependency_results.get("dependencies_checked") == 0
+                else "Checked software libraries listed in supported npm lockfiles only. Other library sources are not covered."
+            ),
         }
 
     elif dependency_scan_status == "completed_with_errors":

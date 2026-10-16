@@ -1,6 +1,7 @@
 ﻿import re
 
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 # Files/directories that should not be scanned.
@@ -252,6 +253,12 @@ def scan_line(
 
     for rule in SECRET_RULES:
         for match in rule["pattern"].finditer(line):
+            if rule["id"] == "database-connection-string":
+                try:
+                    if not urlsplit(match.group()).password:
+                        continue
+                except ValueError:
+                    continue
             value_group = rule.get(
                 "value_group"
             )
@@ -356,6 +363,13 @@ def scan_secrets(repository_path: Path):
                 continue
 
             content = read_result["content"]
+            # Recognize only complete, flat Firebase browser config objects.
+            # Keep a visible review item; never infer that access rules are safe.
+            firebase_lines = set()
+            for block in re.finditer(r"\bfirebaseConfig\s*=\s*\{[^{}]{0,4096}\}", content):
+                if all(re.search(r"\b" + key + r"\s*:", block.group()) for key in ("apiKey", "authDomain", "projectId", "appId")):
+                    first = content.count("\n", 0, block.start()) + 1
+                    firebase_lines.update(range(first, first + block.group().count("\n") + 1))
             files_scanned += 1
 
             try:
@@ -376,13 +390,18 @@ def scan_secrets(repository_path: Path):
                 content.splitlines(),
                 start=1,
             ):
-                findings.extend(
-                    scan_line(
+                line_findings = scan_line(
                         line,
                         line_number,
                         relative_path,
                     )
-                )
+                for finding in line_findings:
+                    if (line_number in firebase_lines and re.search(r"\bapiKey\s*:", line)
+                            and len(list(next(rule["pattern"] for rule in SECRET_RULES if rule["id"] == "generic-secret-assignment").finditer(line))) == 1
+                            and finding["rule_id"] == "generic-secret-assignment"):
+                        finding.update(rule_id="firebase-browser-config", severity="INFO",
+                                       title="Firebase Browser Configuration - Review Access Settings")
+                    findings.append(finding)
 
     except OSError:
         return {

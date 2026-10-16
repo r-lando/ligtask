@@ -15,3 +15,17 @@ def test_xml_escape_exclusion_does_not_hide_parser_import(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     findings = json.loads(result.stdout)["results"]
     assert [finding["start"]["line"] for finding in findings] == [2]
+
+
+def test_html_rules_keep_dynamic_writes_and_skip_fixed_text(tmp_path):
+    source = tmp_path / "sample.js"
+    source.write_text('button.innerHTML = "Save" || "Done";\nbutton.innerHTML = userInput;\n', encoding="utf-8")
+    result = subprocess.run([
+        "semgrep", "--config", str(SEMGREP_RULES_PATH / "javascript/browser/security/insecure-innerhtml.yaml"),
+        "--config", str(SEMGREP_RULES_PATH / "javascript/browser/security/insecure-document-method.yaml"),
+        "--json", "--no-git-ignore", str(source),
+    ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+    findings = json.loads(result.stdout)["results"]
+    assert len(findings) == 2
+    assert {finding["start"]["line"] for finding in findings} == {2}
