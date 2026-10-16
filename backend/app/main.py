@@ -1,5 +1,15 @@
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 from fastapi import FastAPI
+from app.api.auth import router as auth_router
+from app.services.auth_service import allowed_origins
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
+from app.services.job_service import AssessmentWorker, initialize_jobs
 
 from app.api.assessments import (
     router as assessments_router,
@@ -11,9 +21,21 @@ from app.services.database_service import (
 
 
 initialize_database()
+initialize_jobs()
+
+
+@asynccontextmanager
+async def lifespan(app):
+    worker = AssessmentWorker()
+    worker.start()
+    try:
+        yield
+    finally:
+        await run_in_threadpool(worker.stop)
 
 
 app = FastAPI(
+    lifespan=lifespan,
     title="TALGED API",
     description=(
         "Repository-Aware Security "
@@ -25,10 +47,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-    ],
+    allow_origins=allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +57,7 @@ app.add_middleware(
 app.include_router(
     assessments_router
 )
+app.include_router(auth_router)
 
 
 @app.get("/")

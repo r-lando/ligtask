@@ -19,7 +19,11 @@ def normalize_severity(severity):
     if not severity:
         return "UNKNOWN"
 
-    normalized = str(severity).upper()
+    normalized = str(severity).strip().upper()
+
+    # Semgrep rule priorities are labels, not CVSS scores. Preserve INFO
+    # audit findings and translate ERROR/WARNING to our report vocabulary.
+    normalized = {"ERROR": "HIGH", "WARNING": "MEDIUM"}.get(normalized, normalized)
 
     if normalized in VALID_SEVERITIES:
         return normalized

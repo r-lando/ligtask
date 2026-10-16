@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
 from fastapi import HTTPException, UploadFile
+from starlette.concurrency import run_in_threadpool
 
 from app.services.config_service import (
     scan_configurations,
@@ -1239,6 +1240,12 @@ def finalize_assessment(
 async def process_repository(
     file: UploadFile,
 ):
+    # Extraction, scanners, network calls and persistence are synchronous.
+    # Keep the request alive until the worker finishes so its upload stays open.
+    return await run_in_threadpool(_process_repository, file)
+
+
+def _process_repository(file: UploadFile):
     """
     Process a repository submitted through
     ZIP upload.
@@ -1272,7 +1279,7 @@ async def process_repository(
         with zip_path.open(
             "wb"
         ) as buffer:
-            while chunk := await file.read(
+            while chunk := file.file.read(
                 1024 * 1024
             ):
                 total_uploaded += len(

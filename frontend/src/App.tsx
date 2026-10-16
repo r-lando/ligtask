@@ -7,6 +7,9 @@ import RealFindingDetailScreen from './pages/FindingDetailScreen'
 import {
   assessGitHubRepository,
   uploadRepository,
+  getPendingJob,
+  waitForAssessment,
+  type AssessmentJob,
 } from './services/api'
 
 type AssessmentInput =
@@ -1335,11 +1338,15 @@ function ScanConfigScreen({
 
 function ScanningScreen({
   assessmentInput,
+  jobStatus,
+  canRetry,
   error,
   onRetry,
   navigate,
 }: {
   assessmentInput: AssessmentInput | null
+  jobStatus: AssessmentJob['status'] | 'submitting'
+  canRetry: boolean
   error: string
   onRetry: () => void
   navigate: (s: Screen) => void
@@ -1372,7 +1379,7 @@ function ScanningScreen({
       ? getGitHubRepositoryName(assessmentInput.repositoryUrl)
       : assessmentInput?.type === 'ZIP'
         ? assessmentInput.file.name
-        : 'No repository selected'
+        : 'Resuming assessment'
 
   if (error) {
     return (
@@ -1449,7 +1456,7 @@ function ScanningScreen({
               Change Repository
             </Button>
 
-            <Button onClick={onRetry}>
+            <Button onClick={onRetry} disabled={!canRetry}>
               Retry Assessment
             </Button>
           </div>
@@ -1565,9 +1572,11 @@ function ScanningScreen({
                 lineHeight: 1.65,
               }}
             >
-              The backend currently returns the assessment only after the full
-              pipeline completes, so TALGED does not display a fabricated
-              percentage or claim that a specific scanner has finished.
+              {jobStatus === 'submitting'
+                ? 'Submitting your repository for assessment…'
+                : jobStatus === 'queued'
+                  ? 'Your assessment is queued and will start when a scanner is available.'
+                  : 'Your assessment is running. Results will appear when processing completes.'}
             </div>
 
             <div
@@ -1675,7 +1684,7 @@ function ScanningScreen({
                   lineHeight: 1.5,
                 }}
               >
-                Please keep this page open while the request is being processed.
+                After submission, you can reload this tab to reconnect to your assessment.
               </div>
             </Card>
 
@@ -1717,10 +1726,6 @@ function ScanningScreen({
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
-type AssessmentStartResponse = {
-  assessment_id: string
-}
-
 function getErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
     return error.message
@@ -1730,7 +1735,8 @@ function getErrorMessage(error: unknown) {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('home')
+  const [resumeJobId] = useState(getPendingJob)
+  const [screen, setScreen] = useState<Screen>(resumeJobId ? 'scanning' : 'home')
 
   const [assessmentInput, setAssessmentInput] =
     useState<AssessmentInput | null>(null)
@@ -1745,7 +1751,28 @@ export default function App() {
     useState('')
 
   const [assessmentRunning, setAssessmentRunning] =
-    useState(false)
+    useState(Boolean(resumeJobId))
+
+  const [jobStatus, setJobStatus] = useState<AssessmentJob['status'] | 'submitting'>(resumeJobId ? 'queued' : 'submitting')
+
+  useEffect(() => {
+    const jobId = resumeJobId
+    if (!jobId) return
+    const controller = new AbortController()
+    waitForAssessment(jobId, setJobStatus, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return
+        setAssessmentId(result.assessment_id)
+        setScreen('results')
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setAssessmentError(getErrorMessage(error))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAssessmentRunning(false)
+      })
+    return () => controller.abort()
+  }, [resumeJobId])
 
   const navigate = (nextScreen: Screen) => {
     setScreen(nextScreen)
@@ -1766,7 +1793,7 @@ export default function App() {
   }
 
   const startAssessment = async () => {
-    if (!assessmentInput || assessmentRunning) {
+    if ((!assessmentInput && !getPendingJob()) || assessmentRunning) {
       return
     }
 
@@ -1775,21 +1802,18 @@ export default function App() {
     setSelectedFinding(null)
     setAssessmentId(null)
     setScreen('scanning')
+    setJobStatus('submitting')
 
     try {
-      let response: AssessmentStartResponse
-
-      if (assessmentInput.type === 'ZIP') {
-        response =
-          await uploadRepository<AssessmentStartResponse>(
-            assessmentInput.file,
-          )
-      } else {
-        response =
-          await assessGitHubRepository<AssessmentStartResponse>(
-            assessmentInput.repositoryUrl,
-          )
+      let jobId = getPendingJob()
+      if (!jobId && assessmentInput) {
+        const job = assessmentInput.type === 'ZIP'
+          ? await uploadRepository(assessmentInput.file)
+          : await assessGitHubRepository(assessmentInput.repositoryUrl)
+        jobId = job.job_id
       }
+      if (!jobId) throw new Error('No assessment job was created.')
+      const response = await waitForAssessment(jobId, setJobStatus)
 
       if (!response?.assessment_id) {
         throw new Error(
@@ -1871,6 +1895,8 @@ export default function App() {
 
           {screen === 'scanning' && (
             <ScanningScreen
+              jobStatus={jobStatus}
+              canRetry={Boolean(assessmentInput || getPendingJob())}
               navigate={navigate}
               assessmentInput={assessmentInput}
               error={assessmentError}

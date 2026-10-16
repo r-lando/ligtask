@@ -1,5 +1,6 @@
 from io import BytesIO
 from xml.sax.saxutils import escape
+from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
@@ -1511,6 +1512,9 @@ def generate_assessment_pdf(
             ],
         )
     )
+
+    story.append(paragraph(ASSESSMENT_LIMITATION_NOTE, styles["FindingBody"]))
+    story.append(Spacer(1, 8))
 
     partial_warning = build_partial_warning(
         assessment,

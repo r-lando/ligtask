@@ -1,10 +1,55 @@
 from io import BytesIO
+from threading import BoundedSemaphore
+import pytest
 
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services.auth_service import User, require_user
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def signed_in_api_user(monkeypatch):
+    monkeypatch.setitem(app.dependency_overrides, require_user, lambda: User("test-user", "test@example.com"))
+    monkeypatch.setattr("app.api.assessments.assessment_owned_by", lambda assessment_id, user_id: True)
+
+
+def test_scan_capacity_is_shared_by_upload_and_github(monkeypatch):
+    slots = BoundedSemaphore(1)
+    slots.acquire()
+    monkeypatch.setattr("app.api.assessments.scan_slots", slots)
+    try:
+        responses = [
+            client.post(
+                "/assessments/upload",
+                files={"file": ("repo.zip", b"data", "application/zip")},
+            ),
+            client.post(
+                "/assessments/github",
+                json={"repository_url": "https://github.com/owner/repo"},
+            ),
+        ]
+        for response in responses:
+            assert response.status_code == 503
+            assert response.headers["retry-after"] == "10"
+    finally:
+        slots.release()
+
+
+def test_scan_slot_is_released_after_failure(monkeypatch):
+    from app.api.assessments import assessment_slot
+    from fastapi import HTTPException
+
+    monkeypatch.setattr("app.api.assessments.scan_slots", BoundedSemaphore(1))
+    try:
+        with assessment_slot():
+            raise HTTPException(status_code=400, detail="invalid archive")
+    except HTTPException:
+        pass
+    with assessment_slot():
+        pass
 
 
 def test_api_root():
@@ -45,11 +90,11 @@ def test_api_health_degraded(monkeypatch):
 def test_api_list_assessments_pagination_valid(monkeypatch):
     monkeypatch.setattr(
         "app.api.assessments.get_assessments",
-        lambda limit, offset: [{"assessment_id": "test-1"}],
+        lambda limit, offset, user_id: [{"assessment_id": "test-1"}],
     )
     monkeypatch.setattr(
         "app.api.assessments.get_assessment_count",
-        lambda: 1,
+        lambda user_id: 1,
     )
 
     response = client.get("/assessments?limit=10&offset=0")

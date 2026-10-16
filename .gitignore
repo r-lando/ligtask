@@ -9,6 +9,7 @@ __pycache__/
 # Environment / secrets
 .env
 .env.*
+!.env.example
 
 # VS Code
 .vscode/
@@ -46,3 +47,6 @@ evaluation/dependency/results/
 evaluation/secret/results/
 
 evaluation/configuration/results/
+
+# Temporary source staged for queued assessments
+backend/assessment_jobs/

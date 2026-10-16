@@ -1,10 +1,14 @@
 from io import BytesIO
+from contextlib import contextmanager
+from threading import BoundedSemaphore
 
 from fastapi import (
     APIRouter,
+    Depends,
     File,
     HTTPException,
     Query,
+    Response,
     UploadFile,
 )
 from fastapi.responses import (
@@ -16,19 +20,22 @@ from app.models.assessment_models import (
     GitHubAssessmentRequest,
 )
 from app.services.database_service import (
+    assessment_owned_by,
     get_assessment_by_id,
     get_assessment_count,
     get_assessments,
 )
+from app.services.auth_service import User, require_user
 from app.services.pdf_report_service import (
     generate_assessment_pdf,
 )
 from app.services.report_service import (
     generate_assessment_html,
 )
-from app.services.repository_service import (
-    process_github_repository,
-    process_repository,
+from app.services.job_service import (
+    get_job,
+    submit_github,
+    submit_upload,
 )
 
 
@@ -37,9 +44,28 @@ router = APIRouter(
     tags=["Assessments"],
 )
 
+# Bound expensive work per API process. Reject excess requests instead of
+# holding an unlimited queue of uploaded repositories in memory/on disk.
+scan_slots = BoundedSemaphore(2)
+
+
+@contextmanager
+def assessment_slot():
+    if not scan_slots.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail="Assessment capacity reached. Please retry shortly.",
+            headers={"Retry-After": "10"},
+        )
+    try:
+        yield
+    finally:
+        scan_slots.release()
+
 
 @router.get("")
 def list_assessments(
+    user: User = Depends(require_user),
     limit: int = Query(
         default=50,
         ge=1,
@@ -53,9 +79,10 @@ def list_assessments(
     assessments = get_assessments(
         limit=limit,
         offset=offset,
+        user_id=user.id,
     )
 
-    total = get_assessment_count()
+    total = get_assessment_count(user_id=user.id)
 
     return {
         "total": total,
@@ -65,9 +92,10 @@ def list_assessments(
     }
 
 
-@router.post("/upload")
-async def upload_repository(
+@router.post("/upload", status_code=202)
+def upload_repository(
     file: UploadFile = File(...),
+    user: User = Depends(require_user),
 ):
     filename = file.filename or ""
 
@@ -82,18 +110,26 @@ async def upload_repository(
             ),
         )
 
-    return await process_repository(
-        file
-    )
+    with assessment_slot():
+        return submit_upload(file, user_id=user.id)
 
 
-@router.post("/github")
+@router.post("/github", status_code=202)
 def assess_github_repository(
     request: GitHubAssessmentRequest,
+    user: User = Depends(require_user),
 ):
-    return process_github_repository(
-        request.repository_url
-    )
+    with assessment_slot():
+        return submit_github(request.repository_url, user_id=user.id)
+
+
+@router.get("/jobs/{job_id}")
+def retrieve_job(job_id: str, response: Response, user: User = Depends(require_user)):
+    job = get_job(job_id, user_id=user.id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Assessment job not found.")
+    response.headers["Cache-Control"] = "no-store"
+    return job
 
 
 @router.get(
@@ -101,7 +137,9 @@ def assess_github_repository(
 )
 def download_assessment_pdf(
     assessment_id: str,
+    user: User = Depends(require_user),
 ):
+    require_assessment_owner(assessment_id, user)
     pdf_bytes = generate_assessment_pdf(
         assessment_id
     )
@@ -135,7 +173,9 @@ def download_assessment_pdf(
 )
 def get_assessment_report(
     assessment_id: str,
+    user: User = Depends(require_user),
 ):
+    require_assessment_owner(assessment_id, user)
     html_report = generate_assessment_html(
         assessment_id
     )
@@ -158,7 +198,9 @@ def get_assessment_report(
 @router.get("/{assessment_id}")
 def retrieve_assessment(
     assessment_id: str,
+    user: User = Depends(require_user),
 ):
+    require_assessment_owner(assessment_id, user)
     assessment = get_assessment_by_id(
         assessment_id
     )
@@ -170,3 +212,8 @@ def retrieve_assessment(
         )
 
     return assessment
+
+
+def require_assessment_owner(assessment_id, user):
+    if not assessment_owned_by(assessment_id, user.id):
+        raise HTTPException(status_code=404, detail="Assessment not found.")

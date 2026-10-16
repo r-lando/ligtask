@@ -194,6 +194,8 @@ def test_html_report_escapes_untrusted_input(
     assert "Encode or sanitize &lt;script&gt;output&lt;/script&gt;." in html
     assert "src/routes.js:42" in html
     assert "package-lock.json" in html
+    assert "dependency matches do not confirm exploitability" in html
+    assert "Informational findings are audit observations" in html
 
 
 def test_html_report_handles_partial_assessment(

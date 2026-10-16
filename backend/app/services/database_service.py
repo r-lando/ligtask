@@ -255,6 +255,13 @@ def initialize_database():
                 """
             )
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS assessment_owners (
+                assessment_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_assessment_owners_user ON assessment_owners(user_id)")
         connection.commit()
 
     finally:
@@ -591,7 +598,7 @@ def save_assessment(
         connection.close()
 
 
-def get_assessment_count():
+def get_assessment_count(user_id=None):
     """
     Return the number of stored assessments.
 
@@ -603,9 +610,12 @@ def get_assessment_count():
     try:
         row = connection.execute(
             """
-            SELECT COUNT(*) AS total
-            FROM assessments;
-            """
+            SELECT COUNT(*) AS total FROM assessments
+            WHERE (? IS NULL OR id IN (
+                SELECT assessment_id FROM assessment_owners WHERE user_id = ?
+            ));
+            """,
+            (user_id, user_id),
         ).fetchone()
 
         return row["total"]
@@ -763,6 +773,7 @@ def row_to_finding(row):
 def get_assessments(
     limit=50,
     offset=0,
+    user_id=None,
 ):
     """
     Retrieve stored assessment history with
@@ -778,11 +789,16 @@ def get_assessments(
             """
             SELECT *
             FROM assessments
+            WHERE (? IS NULL OR id IN (
+                SELECT assessment_id FROM assessment_owners WHERE user_id = ?
+            ))
             ORDER BY created_at DESC
             LIMIT ?
             OFFSET ?;
             """,
             (
+                user_id,
+                user_id,
                 limit,
                 offset,
             ),
@@ -857,6 +873,17 @@ def get_assessment_by_id(
 
     finally:
         connection.close()
+
+def assessment_owned_by(assessment_id, user_id):
+    connection = get_connection()
+    try:
+        return connection.execute(
+            "SELECT 1 FROM assessment_owners WHERE assessment_id = ? AND user_id = ?",
+            (assessment_id, user_id),
+        ).fetchone() is not None
+    finally:
+        connection.close()
+
 
 def database_health_check():
     """

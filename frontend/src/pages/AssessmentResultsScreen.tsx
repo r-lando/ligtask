@@ -7,8 +7,7 @@ import {
 
 import {
   getAssessment,
-  getHtmlReportUrl,
-  getPdfReportUrl,
+  downloadReport,
 } from '../services/api'
 
 import type {
@@ -213,6 +212,17 @@ export default function AssessmentResultsScreen({
 
   const [error, setError] =
     useState<string | null>(null)
+
+  const [reportError, setReportError] = useState('')
+  const [downloading, setDownloading] = useState(false)
+
+  const exportReport = async (format: 'html' | 'pdf') => {
+    setReportError('')
+    setDownloading(true)
+    try { await downloadReport(assessmentId, format) }
+    catch (reason) { setReportError(reason instanceof Error ? reason.message : 'Report download failed.') }
+    finally { setDownloading(false) }
+  }
 
   const [
     severityFilter,
@@ -569,15 +579,8 @@ export default function AssessmentResultsScreen({
         >
           <button
             type="button"
-            onClick={() =>
-              window.open(
-                getHtmlReportUrl(
-                  assessment.assessment_id,
-                ),
-                '_blank',
-                'noopener,noreferrer',
-              )
-            }
+            disabled={downloading}
+            onClick={() => { void exportReport('html') }}
             style={{
               border:
                 '1px solid var(--border)',
@@ -591,17 +594,13 @@ export default function AssessmentResultsScreen({
               fontWeight: 600,
             }}
           >
-            HTML Report
+            Download HTML
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              window.location.href =
-                getPdfReportUrl(
-                  assessment.assessment_id,
-                )
-            }}
+            disabled={downloading}
+            onClick={() => { void exportReport('pdf') }}
             style={{
               border: 'none',
               background:
@@ -619,6 +618,8 @@ export default function AssessmentResultsScreen({
         </div>
       </div>
 
+
+      {reportError && <p role="alert" style={{ color: '#fca5a5' }}>{reportError}</p>}
 
       {assessment.status ===
         'partial' && (

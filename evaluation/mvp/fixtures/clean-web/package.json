@@ -1,0 +1,7 @@
+{
+  "name": "talged-clean-baseline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static clean fixture for MVP smoke validation",
+  "dependencies": {}
+}

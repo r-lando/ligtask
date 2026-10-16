@@ -1,4 +1,5 @@
 from html import escape
+from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE
 
 from app.services.database_service import (
     get_assessment_by_id,
@@ -689,6 +690,8 @@ def generate_assessment_html(
     </p>
 
     {partial_warning}
+
+    <p class="muted">{safe_text(ASSESSMENT_LIMITATION_NOTE)}</p>
 
     <h2>
         Assessment Information
