@@ -42,10 +42,17 @@ fixture is needed: TALGED analyzes its source files.
 
 ## Live two-account acceptance
 
+Progress is recorded in `VALIDATION.md`: separate histories and assessment
+denials in both directions have been reported, along with B-to-A report denials.
+Reverse report access, both job-status directions and signed-out access remain
+pending. Record the active identity and actual HTTP status for final signoff.
+
 An administrator must create a second verified Supabase account and add its
 email to `AUTH_ALLOWED_EMAILS`, then restart the backend when scans are idle.
 Use two separate browser profiles/private sessions to prevent session cookies
 from being shared. Do not use merely two tabs in the same browser session.
+Before each cross-user request, open `/auth/me` on port 8000 in that same session
+and confirm it identifies the intended caller rather than the assessment owner.
 
 1. User A scans a repository and notes its assessment ID and job ID.
 2. User B signs in separately. User A's result must not appear in B's history.

@@ -70,10 +70,31 @@ From `backend/`:
 From `frontend/`, run `npm test`, `npm run lint`, and `npm run build`.
 These commands regenerate their local evidence and may report different timings.
 
-## Remaining live check
+## Live two-account observations
 
-Two real Supabase/browser accounts have not been tested against each other.
-The isolation checks above verify the application using controlled provider
-responses. Complete the two-account sequence in `DEMO.md` before calling live
-multi-user acceptance complete. Do not share passwords in chat or create test
-users automatically in the production provider.
+Updated 16 October 2026 (Asia/Manila). User A owns assessment
+`829abf48-a70a-46aa-bf47-83733b664495`; User B owns assessment
+`bb28110f-9558-436a-90ba-bae0e369fe48`. Ownership was independently checked in
+the local database against the two distinct provider user IDs. Account emails,
+passwords, session cookies and tokens are deliberately excluded from this record.
+
+| Check | Observation | Evidence level |
+| --- | --- | --- |
+| History separation | User reported different histories for the two accounts | User-reported live observation |
+| B reads A's assessment | User pasted `{"detail":"Assessment not found."}` | User-reported response body; HTTP status and active account not independently captured for that attempt |
+| B reads A's HTML/PDF reports | User reported the same denial for both links | User-reported live observation; active account not independently captured for those attempts |
+| A reads B's assessment | User pasted `{"detail":"Assessment not found."}` for B's assessment URL | User-reported response body; HTTP status and active account not independently captured for that attempt |
+| A reads B's HTML/PDF reports | Not tested live yet | Pending |
+| Foreign job-status access, both directions | Not tested live yet | Pending |
+| Signed-out protected request | Not tested live yet | Pending |
+
+An earlier apparent disclosure was investigated: `/auth/me` in that browser
+identified User A, who owned the requested assessment. The returned data was
+therefore authorized. Regular tabs share cookies, so this is not evidence of
+cross-user access and reinforces the need to verify identity in each test session.
+
+These observations supplement the passing automated isolation tests; they do
+not replace them or constitute full live acceptance signoff. Before completing
+signoff, repeat the denial checks with `/auth/me` confirming the intended caller
+in the same isolated browser session, capture the HTTP status, and complete the
+pending checks above using the sequence in `DEMO.md`.
