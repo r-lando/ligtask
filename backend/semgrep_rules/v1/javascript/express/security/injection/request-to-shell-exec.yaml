@@ -1,0 +1,29 @@
+rules:
+  - id: request-to-shell-exec
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request data flows into a shell command string. Review the input path and replace shell execution with a fixed executable and validated argument list where possible. This match is not proof of successful exploitation.
+    metadata:
+      category: security
+      technology: [express, nodejs]
+      confidence: HIGH
+      cwe: 'CWE-78: OS Command Injection'
+    pattern-sources:
+      - pattern: $REQ.body.$FIELD
+      - pattern: $REQ.query.$FIELD
+      - pattern: $REQ.params.$FIELD
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  const $EXEC = require('child_process').exec;
+                  ...
+              - pattern-inside: |
+                  const {exec: $EXEC} = require('child_process');
+                  ...
+              - pattern-inside: |
+                  import {exec as $EXEC} from 'child_process';
+                  ...
+          - pattern: $EXEC($CMD, ...)
+          - focus-metavariable: $CMD
