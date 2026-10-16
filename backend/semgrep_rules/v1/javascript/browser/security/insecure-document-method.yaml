@@ -38,3 +38,5 @@ rules:
   - pattern-not: |
       $EL.outerHTML = "...";
   - pattern-not: document.write("...")
+  - pattern-not: |
+      $EL.innerHTML = "..." || "...";

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/api.test.mjs",
+    "test": "node --test tests/api.test.mjs tests/findingExplanation.test.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },

@@ -2,6 +2,16 @@ from copy import deepcopy
 
 
 REMEDIATION_RULES = {
+    "firebase-browser-config": {
+        "description": "An API key was found in a Firebase browser configuration object. These keys identify the project and are normally public. This is not a confirmed private-secret leak; access restrictions were not checked.",
+        "recommendation": "Verify that the key is limited to the intended Firebase services and that database and storage access rules protect user data. Never put service-account private keys or unrelated private API keys in browser code.",
+        "reference_type": "TALGED Rule Guidance",
+    },
+    "browser-html-write": {
+        "description": "JavaScript writes HTML at this location. Multiple rules flagged the same location; this is one review item, not multiple confirmed vulnerabilities. An attack depends on whether someone can control the inserted value and whether it is safely handled.",
+        "recommendation": "Trace the inserted value. Use textContent when displaying plain text. If HTML is required, use a maintained HTML sanitizer and handle attribute values safely. Do not remove safe static markup simply to silence the warning.",
+        "reference_type": "TALGED Rule Guidance",
+    },
     # -------------------------------------------------
     # Correlated configuration findings
     # -------------------------------------------------
@@ -72,16 +82,15 @@ REMEDIATION_RULES = {
 
     "generic-secret-assignment": {
         "description": (
-            "A value resembling a credential or "
-            "secret was assigned directly within a "
-            "repository file."
+            "A value assigned to a password or key-like name matched a detection rule. "
+            "The value has not been tested and is not confirmed to be a private credential. "
+            "Some browser configuration, such as Firebase client API keys, is intentionally public."
         ),
         "recommendation": (
-            "Remove the secret from tracked source "
-            "files, rotate the exposed credential if "
-            "it is valid, and load sensitive values "
-            "through an appropriate secret-management "
-            "or environment mechanism."
+            "Identify the service and purpose without sharing the value. If it is a private "
+            "credential exposed in code, revoke or replace it and move it to protected storage. "
+            "For Firebase browser configuration, verify API restrictions and database access "
+            "rules; do not assume the key is private or that public configuration is automatically safe."
         ),
         "reference_type": "TALGED Rule Guidance",
     },
@@ -326,8 +335,7 @@ def get_default_recommended_action(finding):
 
     if category == "SECRET":
         return (
-            "Remove the exposed secret and rotate "
-            "it if it is still valid."
+            "Check whether this is a private credential; replace it if exposed."
         )
 
     if category == "CONFIGURATION":
@@ -356,6 +364,12 @@ def enrich_finding(finding):
             rule_id
         )
     )
+
+    if not predefined_rule and finding.get("category") == "SAST":
+        rule = str(rule_id or "")
+        if rule.endswith(("insecure-innerhtml", "insecure-document-method", "html-in-template-string", "react-unsanitized-method")):
+            predefined_rule = dict(REMEDIATION_RULES["browser-html-write"])
+            predefined_rule["description"] = "A rule flagged HTML construction or insertion at this location. Review the inserted values and where the HTML is used. This alone does not prove that someone can run unwanted scripts in your app."
 
     if predefined_rule:
         description = (
@@ -403,6 +417,8 @@ def enrich_finding(finding):
         )
     )
 
+    if rule_id == "firebase-browser-config":
+        enriched["recommended_action"] = "Review Firebase access rules and key restrictions; public configuration alone is not a private-secret leak."
     return enriched
 
 

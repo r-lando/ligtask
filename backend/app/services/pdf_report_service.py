@@ -596,7 +596,7 @@ def build_mechanism_status_table(
                     mechanism.get(
                         "error"
                     )
-                    or "None",
+                    or mechanism.get("note") or "None",
                     styles["SmallText"],
                 ),
             ]
@@ -1401,7 +1401,7 @@ def build_finding_section(
                 "<b>Correlated:</b> "
                 f"{correlated_text}"
                 " | "
-                "<b>Evidence Count:</b> "
+                f"<b>{'Occurrences' if finding.get('category') == 'DEPENDENCY' else 'Evidence Count'}:</b> "
                 f"{evidence_count}"
             ),
             styles["FindingBody"],

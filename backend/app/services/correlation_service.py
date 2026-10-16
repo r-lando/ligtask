@@ -19,6 +19,15 @@ SEVERITY_RANK = {
 #
 # This avoids fuzzy or probabilistic matching.
 CORRELATION_RULES = {
+    "browser-html-write": {
+        "title": "HTML Content Written by JavaScript",
+        "category": "SAST",
+        "rule_ids": {
+            "semgrep_rules.v1.javascript.browser.security.insecure-document-method",
+            "semgrep_rules.v1.javascript.browser.security.insecure-innerhtml",
+        },
+        "message": "JavaScript writes HTML at this location. Check where the value comes from and whether it is safely escaped. This does not by itself prove a script-injection vulnerability.",
+    },
     "docker-container-root": {
         "title": "Container May Run as Root",
         "category": "CONFIGURATION",
@@ -96,6 +105,12 @@ def create_correlation_key(finding):
     Create a deterministic key for findings that
     are eligible for explicit correlation.
     """
+    if finding.get("category") == "DEPENDENCY":
+        fields = ("rule_id", "package", "version", "ecosystem", "file")
+        if all(finding.get(field) for field in fields):
+            return ("dependency-occurrence", *(finding[field] for field in fields))
+        return None
+
     group_id = find_correlation_group(
         finding.get("rule_id")
     )
@@ -107,6 +122,14 @@ def create_correlation_key(finding):
 
     if not file_path:
         return None
+
+    if group_id == "browser-html-write":
+        # Only the known overlapping pair at the exact same location.
+        # Do not combine separate writes or case-distinct repository files.
+        line = finding.get("line")
+        if line is None:
+            return None
+        return (group_id, file_path.replace("\\", "/"), line)
 
     return (
         group_id,
@@ -151,6 +174,17 @@ def build_correlated_finding(
     one consolidated issue while preserving
     scanner evidence.
     """
+    if group_id == "dependency-occurrence":
+        # Keep advisory and package identity intact. Do not collapse versions,
+        # ecosystems or lockfiles, and do not fabricate cross-scanner evidence.
+        selected = max(findings, key=lambda f: get_severity_rank(f.get("severity")))
+        merged = build_single_finding(selected)
+        merged["correlated"] = True
+        merged["evidence_count"] = sum(f.get("evidence_count", 1) for f in findings)
+        merged["sources"] = list(dict.fromkeys(f["scanner"] for f in findings if f.get("scanner")))
+        merged["source_rule_ids"] = [selected["rule_id"]]
+        return merged
+
     rule = CORRELATION_RULES[
         group_id
     ]

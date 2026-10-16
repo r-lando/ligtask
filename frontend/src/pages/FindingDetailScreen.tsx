@@ -7,6 +7,7 @@ import type {
   AssessmentFinding,
   FindingSeverity,
 } from '../types/assessment'
+import { findingReview } from '../services/findingExplanation'
 
 
 interface FindingDetailScreenProps {
@@ -375,6 +376,9 @@ export default function FindingDetailScreen({
           }}
         >
           <Section title="Finding Description">
+            <p style={{ color: 'var(--text-secondary, #64748b)', fontSize: 12, lineHeight: 1.7 }}>
+              {findingReview(finding)}
+            </p>
             <p
               style={{
                 margin: 0,
@@ -599,7 +603,7 @@ export default function FindingDetailScreen({
               />
 
               <DetailItem
-                label="Evidence Count"
+                label={finding.category === 'DEPENDENCY' ? 'Occurrences in scanned lockfile' : 'Evidence Count'}
                 value={
                   finding.evidence_count
                 }

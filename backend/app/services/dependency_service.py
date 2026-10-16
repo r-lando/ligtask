@@ -161,6 +161,20 @@ def extract_cvss(vulnerability):
 
 
 def query_osv_batch(client, dependencies):
+    """Bound request size and preserve dependency/result ordering."""
+    results = []
+    for start in range(0, len(dependencies), 100):
+        batch = dependencies[start:start + 100]
+        result = _query_osv_batch(client, batch)
+        if not result["success"]:
+            return result
+        if len(result["results"]) != len(batch):
+            return {"success": False, "results": [], "error": "OSV batch response count did not match the number of dependency queries."}
+        results.extend(result["results"])
+    return {"success": True, "results": results, "error": None}
+
+
+def _query_osv_batch(client, dependencies):
     """
     Query OSV for multiple dependencies in a
     single batch request.

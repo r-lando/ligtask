@@ -17,6 +17,7 @@ import type {
 } from '../types/assessment'
 
 import type { Screen } from '../components/Sidebar'
+import { severityContext, contextLabel } from '../services/findingExplanation'
 
 
 interface AssessmentResultsScreenProps {
@@ -84,6 +85,7 @@ type MechanismStatus = {
   scanner: string
   findings_count: number
   error: string | null
+  note?: string
 }
 
 
@@ -741,7 +743,7 @@ export default function AssessmentResultsScreen({
                     findings
                   </div>
 
-                  {mechanism.error && (
+                  {(mechanism.error || mechanism.note) && (
                     <div
                       style={{
                         marginTop: 7,
@@ -752,7 +754,7 @@ export default function AssessmentResultsScreen({
                           'anywhere',
                       }}
                     >
-                      {mechanism.error}
+                      {mechanism.error || mechanism.note}
                     </div>
                   )}
                 </div>
@@ -1059,6 +1061,9 @@ export default function AssessmentResultsScreen({
                     }}
                   >
                     {severity}
+                  </div>
+                  <div style={{ color: 'var(--text-secondary, #64748b)', fontSize: 10, lineHeight: 1.5, marginTop: 6 }}>
+                    {severityContext(assessment.findings, severity)}
                   </div>
                 </button>
               )
@@ -1710,8 +1715,8 @@ export default function AssessmentResultsScreen({
             Security Findings
           </h2>
           <p style={{ color: '#64748b', fontSize: 11 }}>
-            {Object.entries(assessment.context_summary ?? {}).map(([label, count]) => `${label}: ${count}`).join(' · ')}
-            {' — Path-based context only. All findings remain included and require review.'}
+            {Object.entries(assessment.context_summary ?? {}).map(([label, count]) => `${contextLabel(label)}: ${count}`).join(' · ')}
+            {' — These are possible issues to review, not a score of how secure your app is. Test files are included. File groups are based on names and folders and may be wrong. No findings does not guarantee your app is safe.'}
           </p>
 
           <div
@@ -1903,7 +1908,7 @@ export default function AssessmentResultsScreen({
                             'monospace',
                         }}
                       >
-                        {finding.file_context ? `[${finding.file_context}] ` : ''}
+                        {finding.file_context ? `[${contextLabel(finding.file_context)}] ` : ''}
                         {finding.file ||
                           'Repository level'}
 
@@ -1959,11 +1964,11 @@ export default function AssessmentResultsScreen({
                               fontSize: 9,
                             }}
                           >
-                            Correlated ·{' '}
+                            {finding.category === 'DEPENDENCY' ? 'Grouped · ' : 'Correlated · '}
                             {
                               finding.evidence_count
                             }{' '}
-                            evidence
+                            {finding.category === 'DEPENDENCY' ? 'occurrences' : 'evidence'}
                           </span>
                         </>
                       )}
