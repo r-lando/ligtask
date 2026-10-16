@@ -64,6 +64,7 @@ export interface AssessmentHistoryResponse {
 }
 
 export interface AssessmentFinding {
+  file_context?: string
   id: number
   scanner: string
   category: FindingCategory
@@ -97,5 +98,6 @@ export interface AssessmentFinding {
 
 export interface AssessmentDetail
   extends AssessmentHistoryItem {
+  context_summary?: Record<string, number>
   findings: AssessmentFinding[]
 }

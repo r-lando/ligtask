@@ -42,7 +42,9 @@ rules:
     be
     controlled by a malicious actor, it may be an instance of command injection.
     Audit the use of this call to ensure it is not controllable by an external resource.
-    You may consider using 'shlex.escape()'.
+    This is a manual-review observation, not confirmed command injection.
+    Prefer an argument list with shell=False; validate the executable and arguments.
+    Shell escaping is not a substitute for validation and is not needed for normal argv lists.
   metadata:
     owasp:
     - A01:2017 - Injection
@@ -71,5 +73,5 @@ rules:
     likelihood: LOW
     impact: HIGH
   languages: [python]
-  severity: ERROR
+  severity: INFO
 
