@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from app.services.finding_context import file_context, context_summary
 from pathlib import Path
 
 
@@ -731,6 +732,7 @@ def row_to_finding(row):
         "cvss_vector": row["cvss_vector"],
         "cvss_version": row["cvss_version"],
         "file": row["file_path"],
+        "file_context": file_context(row["file_path"]),
         "line": row["line_number"],
         "message": row["message"],
         "package": row["package_name"],
@@ -869,6 +871,7 @@ def get_assessment_by_id(
             for row in finding_rows
         ]
 
+        assessment["context_summary"] = context_summary(assessment["findings"])
         return assessment
 
     finally:

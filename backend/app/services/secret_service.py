@@ -106,7 +106,9 @@ SECRET_RULES = [
                 |
                 pwd
             )
+            ["']?
             \s*
+            (?: : \s* (?:SecretStr|str) \s* (?==) )?
             [:=]
             \s*
             ["']?
@@ -255,6 +257,27 @@ def scan_line(
             )
 
             if value_group is not None:
+                start, end = match.span(value_group)
+                quote = line[start - 1:start]
+                if quote in {"\"", "'"}:
+                    # Require a complete quoted literal, not a prefix of an
+                    # expression, interpolation, or a longer unsupported value.
+                    if line[end:end + 1] != quote:
+                        continue
+                else:
+                    # Bare values are meaningful in config, but identifiers in
+                    # source code are runtime references, not embedded secrets.
+                    suffix = Path(file_path).suffix.lower()
+                    config_file = suffix in {".env", ".txt", ".ini", ".cfg", ".conf", ".yaml", ".yml", ".properties"} or Path(file_path).name.startswith(".env")
+                    if not config_file or not re.match(r"\s*(?:[#;].*)?$", line[end:]):
+                        continue
+                # A Python annotation is not a credential literal. Keep quoted
+                # mappings and annotated assignments with literal defaults.
+                if str(file_path).endswith(".py") and re.match(
+                    r"\s*:\s*(?:SecretStr|str|Optional\[|Annotated\[)",
+                    line[match.end(1):],
+                ) and match.group(2) in {"SecretStr", "Optional", "Annotated"}:
+                    continue
                 candidate_value = match.group(
                     value_group
                 )

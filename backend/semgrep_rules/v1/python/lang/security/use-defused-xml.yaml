@@ -27,4 +27,6 @@ rules:
     data and "XML bombs" can cause denial of service.
   languages: [python]
   severity: ERROR
-  pattern: import xml
+  patterns:
+  - pattern: import xml
+  - pattern-not: from xml.sax.saxutils import escape

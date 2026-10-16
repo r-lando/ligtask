@@ -1709,6 +1709,10 @@ export default function AssessmentResultsScreen({
           >
             Security Findings
           </h2>
+          <p style={{ color: '#64748b', fontSize: 11 }}>
+            {Object.entries(assessment.context_summary ?? {}).map(([label, count]) => `${label}: ${count}`).join(' · ')}
+            {' — Path-based context only. All findings remain included and require review.'}
+          </p>
 
           <div
             style={{
@@ -1899,6 +1903,7 @@ export default function AssessmentResultsScreen({
                             'monospace',
                         }}
                       >
+                        {finding.file_context ? `[${finding.file_context}] ` : ''}
                         {finding.file ||
                           'Repository level'}
 

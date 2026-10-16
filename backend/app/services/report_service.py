@@ -1,4 +1,5 @@
 from html import escape
+from app.services.finding_context import file_context, context_note
 from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE
 
 from app.services.database_service import (
@@ -60,9 +61,10 @@ def format_location(finding):
         return (
             f"{safe_text(file_path)}"
             f":{safe_text(line_number)}"
+            f" [{file_context(file_path)}]"
         )
 
-    return safe_text(file_path)
+    return safe_text(file_path) + " [" + file_context(file_path) + "]"
 
 
 def build_severity_rows(
@@ -692,6 +694,7 @@ def generate_assessment_html(
     {partial_warning}
 
     <p class="muted">{safe_text(ASSESSMENT_LIMITATION_NOTE)}</p>
+    <p class="muted">{safe_text(context_note(findings))}</p>
 
     <h2>
         Assessment Information

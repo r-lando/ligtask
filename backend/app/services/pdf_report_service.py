@@ -1,4 +1,5 @@
 from io import BytesIO
+from app.services.finding_context import file_context, context_note
 from xml.sax.saxutils import escape
 from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE
 
@@ -76,10 +77,10 @@ def format_location(finding):
 
     if line_number:
         return (
-            f"{file_path}:{line_number}"
+            f"{file_path}:{line_number} [{file_context(file_path)}]"
         )
 
-    return str(file_path)
+    return f"{file_path} [{file_context(file_path)}]"
 
 
 def format_sources(finding):
@@ -1514,6 +1515,7 @@ def generate_assessment_pdf(
     )
 
     story.append(paragraph(ASSESSMENT_LIMITATION_NOTE, styles["FindingBody"]))
+    story.append(paragraph(context_note(assessment.get("findings", [])), styles["FindingBody"]))
     story.append(Spacer(1, 8))
 
     partial_warning = build_partial_warning(
