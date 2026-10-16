@@ -70,7 +70,7 @@ From `backend/`:
 From `frontend/`, run `npm test`, `npm run lint`, and `npm run build`.
 These commands regenerate their local evidence and may report different timings.
 
-## Live two-account observations
+## Live two-account acceptance
 
 Updated 16 October 2026 (Asia/Manila). User A owns assessment
 `829abf48-a70a-46aa-bf47-83733b664495`; User B owns assessment
@@ -81,20 +81,43 @@ passwords, session cookies and tokens are deliberately excluded from this record
 | Check | Observation | Evidence level |
 | --- | --- | --- |
 | History separation | User reported different histories for the two accounts | User-reported live observation |
-| B reads A's assessment | User pasted `{"detail":"Assessment not found."}` | User-reported response body; HTTP status and active account not independently captured for that attempt |
-| B reads A's HTML/PDF reports | User reported the same denial for both links | User-reported live observation; active account not independently captured for those attempts |
-| A reads B's assessment | User pasted `{"detail":"Assessment not found."}` for B's assessment URL | User-reported response body; HTTP status and active account not independently captured for that attempt |
-| A reads B's HTML/PDF reports | Not tested live yet | Pending |
-| Foreign job-status access, both directions | Not tested live yet | Pending |
-| Signed-out protected request | Not tested live yet | Pending |
+| B reads A's assessment | HTTP 404; `{"detail":"Assessment not found."}` | Independently observed in browser; caller confirmed using `/auth/me`; HTTP status confirmed in local access log |
+| B reads A's HTML/PDF reports | HTTP 404 for both | Independently observed with B's identity confirmed; access log corroborates both statuses |
+| A reads B's assessment | HTTP 404; `{"detail":"Assessment not found."}` | Independently observed in browser with A's identity confirmed; access log corroborates status |
+| A reads B's HTML/PDF reports | HTTP 404 for both | Independently observed with A's identity confirmed; access log corroborates both statuses |
+| Foreign job-status access, both directions | HTTP 404; `{"detail":"Assessment job not found."}` | Independently observed under each confirmed identity; access log corroborates statuses |
+| Signed-out protected request | Logout succeeds; app shows login screen; `/auth/me`, assessment and job return HTTP 401 | Independently observed in browser and local access log |
 
 An earlier apparent disclosure was investigated: `/auth/me` in that browser
 identified User A, who owned the requested assessment. The returned data was
 therefore authorized. Regular tabs share cookies, so this is not evidence of
 cross-user access and reinforces the need to verify identity in each test session.
 
-These observations supplement the passing automated isolation tests; they do
-not replace them or constitute full live acceptance signoff. Before completing
-signoff, repeat the denial checks with `/auth/me` confirming the intended caller
-in the same isolated browser session, capture the HTTP status, and complete the
-pending checks above using the sequence in `DEMO.md`.
+The final live run explicitly switched the in-app browser from A to B, confirming
+each identity through `/auth/me` before its request series. It then signed out B
+and verified anonymous denial. No passwords, tokens or cookies were inspected
+or recorded. This completed the planned local pilot isolation checks; it does
+not establish public-deployment readiness or test all possible attack paths.
+
+## Pre-merge review
+
+Reviewed PR #1 against `master`, including its earlier unpublished UI, branding,
+recommended-action persistence and test commits. No additional blocking defect
+was identified for the documented trusted, invite-only pilot. Scanner isolation,
+operational cleanup/retention, shared storage and hosting safeguards remain
+deferred as documented in `DEMO.md`.
+
+The committed code at `59ebd28` was exported into a clean local snapshot so the
+unrelated About-page and ignore-file working edits were excluded from testing.
+The snapshot passed 132 backend tests (9.35 seconds), 10 frontend service tests,
+lint, TypeScript checking and the production build. Existing installed frontend
+dependencies were linked into the snapshot; no new packages were installed.
+Lint was run with explicit source paths and `--no-ignore` because the snapshot
+resides beneath the repository's ignored `tmp/` directory. The subsequent
+signoff update changes documentation only.
+
+The committed tree was checked for runtime files and credential-like values.
+No `.env`, database, generated ZIP/PDF, log or runtime key is tracked. The only
+token-shaped matches found by the focused key scan are existing synthetic
+secret-evaluation fixtures, not runtime credentials. The local access-log
+evidence and `evaluation/results/mvp/live-isolation.json` stay ignored.

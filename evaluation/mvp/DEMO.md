@@ -42,10 +42,12 @@ fixture is needed: TALGED analyzes its source files.
 
 ## Live two-account acceptance
 
-Progress is recorded in `VALIDATION.md`: separate histories and assessment
-denials in both directions have been reported, along with B-to-A report denials.
-Reverse report access, both job-status directions and signed-out access remain
-pending. Record the active identity and actual HTTP status for final signoff.
+The 16 October 2026 local pilot check is complete and recorded in
+`VALIDATION.md`. With both caller identities confirmed, foreign assessment,
+HTML/PDF report and job-status requests returned 404 in both directions.
+After sign-out, protected assessment and job requests returned 401. History
+separation was also reported by the user. Repeat this sequence when changing
+authentication or ownership behavior.
 
 An administrator must create a second verified Supabase account and add its
 email to `AUTH_ALLOWED_EMAILS`, then restart the backend when scans are idle.
