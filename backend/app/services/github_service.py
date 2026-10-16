@@ -174,7 +174,7 @@ def github_headers():
         "Accept": (
             "application/vnd.github+json"
         ),
-        "User-Agent": "Ligtask",
+        "User-Agent": "TALGED",
         "X-GitHub-Api-Version": (
             "2022-11-28"
         ),
@@ -302,7 +302,7 @@ def download_repository_archive(
             timeout=REQUEST_TIMEOUT_SECONDS,
             follow_redirects=False,
             headers={
-                "User-Agent": "Ligtask",
+                "User-Agent": "TALGED",
             },
         ) as client:
             with client.stream(

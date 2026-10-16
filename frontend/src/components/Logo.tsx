@@ -36,7 +36,7 @@ export default function Logo() {
           letterSpacing: '-0.01em',
         }}
       >
-        Ligtask
+        TALGED
       </span>
     </div>
   )

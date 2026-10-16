@@ -1,8 +1,29 @@
 from pathlib import Path
+import json
 
 import httpx
 
 from app.services import dependency_service
+
+
+def test_nested_and_workspace_npm_packages_use_actual_names(tmp_path):
+    lock = tmp_path / "package-lock.json"
+    lock.write_text(json.dumps({"packages": {
+        "": {"name": "root", "version": "1.0.0"},
+        "node_modules/parent/node_modules/@scope/child": {"version": "2.0.0"},
+        "packages/web/node_modules/lodash": {"version": "4.17.20"},
+    }}), encoding="utf-8")
+    dependencies = dependency_service.extract_npm_dependencies(lock)
+    assert [(item["name"], item["version"]) for item in dependencies] == [
+        ("@scope/child", "2.0.0"), ("lodash", "4.17.20"),
+    ]
+
+
+def test_invalid_lockfile_shapes_do_not_crash(tmp_path):
+    lock = tmp_path / "package-lock.json"
+    for value in ([], None, {"packages": []}, {"packages": {"node_modules/a": None}}):
+        lock.write_text(json.dumps(value), encoding="utf-8")
+        assert dependency_service.extract_npm_dependencies(lock) == []
 
 
 class FailingClient:

@@ -263,7 +263,7 @@ def scan_line(
                     continue
 
             findings.append({
-                "scanner": "Ligtask Secret Detector",
+                "scanner": "TALGED Secret Detector",
                 "category": "SECRET",
                 "rule_id": rule["id"],
                 "title": rule["title"],

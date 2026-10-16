@@ -76,7 +76,7 @@ def create_finding(
     without including repository contents.
     """
     return {
-        "scanner": "Ligtask Config Scanner",
+        "scanner": "TALGED Config Scanner",
         "category": "CONFIGURATION",
         "rule_id": rule["id"],
         "title": rule["title"],

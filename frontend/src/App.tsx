@@ -7,6 +7,9 @@ import RealFindingDetailScreen from './pages/FindingDetailScreen'
 import {
   assessGitHubRepository,
   uploadRepository,
+  getPendingJob,
+  waitForAssessment,
+  type AssessmentJob,
 } from './services/api'
 
 type AssessmentInput =
@@ -158,10 +161,10 @@ function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
           background: 'linear-gradient(90deg, #7c3aed, #3b82f6)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         }}>
-          Ligtask
+          TALGED
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, margin: '0 0 40px', maxWidth: 420 }}>
-          Ligtask is a privacy-preserving, repository-aware security assessment platform that uses rule-based static code analysis to identify potential vulnerabilities in your web application repositories.
+          TALGED is a security assessment platform for web application repositories that uses rule-based static code analysis to identify potential vulnerabilities in your web application repositories.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 48 }}>
@@ -224,6 +227,179 @@ function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
             </svg>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Screen 1.5: About & Privacy ─────────────────────────────────────────────
+
+function AboutScreen({ navigate }: { navigate: (s: Screen) => void }) {
+  const aboutItems = [
+    {
+      title: 'How It Works',
+      desc: 'Submit a public GitHub repository or a ZIP archive. TALGED runs rule-based static analysis against the source code, dependencies, files, and configuration files, then reports findings by severity.',
+    },
+    {
+      title: 'Assessment Mechanisms',
+      desc: 'Source code analysis, dependency assessment (via CVSS risk correlation), secret detection, and configuration assessment are all applied to each repository.',
+    },
+    {
+      title: 'Data Handling',
+      desc: 'Repository contents are processed temporarily and automatically deleted after assessment. TALGED is a privacy-preserving, repository-aware security assessment platform.',
+    },
+  ]
+
+  const contactLinks = [
+    {
+      label: 'GITHUB',
+      value: 'github.com/r-lando',
+      href: 'https://github.com/r-lando',
+    },
+    {
+      label: 'LINKEDIN',
+      value: 'in/rolando-vinas',
+      href: 'https://linkedin.com/in/rolando-vinas',
+    },
+    {
+      label: 'EMAIL',
+      value: 'rolandovinas25@gmail.com',
+      href: 'mailto:rolandovinas25@gmail.com',
+    },
+  ]
+
+  return (
+    <div style={{ flex: 1, padding: '48px 56px', overflowY: 'auto' }}>
+      <div style={{ maxWidth: 720 }}>
+        <h1 style={{
+          fontSize: 28, fontWeight: 800, color: '#e2e8f0',
+          margin: '0 0 6px', letterSpacing: '-0.03em',
+        }}>
+          About
+        </h1>
+        <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, margin: '0 0 32px' }}>
+          TALGED is a security assessment platform for web application repositories,
+          built around rule-based static code analysis.
+        </p>
+
+        {aboutItems.map((item) => (
+          <Card key={item.title} style={{ padding: 24, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>
+              {item.title}
+            </div>
+            <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7 }}>
+              {item.desc}
+            </div>
+          </Card>
+        ))}
+
+        <Card style={{ padding: 24, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>
+            Let&rsquo;s work together
+          </div>
+          <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7, marginBottom: 18 }}>
+            For a project, an opportunity, or simply a good technology
+            conversation&mdash;my inbox is open.
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {contactLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                target={
+                  link.label === 'EMAIL'
+                    ? undefined
+                    : '_blank'
+                }
+                rel="noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 12,
+                  textDecoration: 'none',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: '#64748b',
+                    letterSpacing: '0.08em',
+                    minWidth: 74,
+                  }}
+                >
+                  {link.label}
+                </span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: '#a78bfa',
+                  }}
+                >
+                  {link.value}
+                </span>
+              </a>
+            ))}
+          </div>
+        </Card>
+
+        <Button onClick={() => navigate('home')} style={{ alignSelf: 'flex-start' }}>
+          Back to Home
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function PrivacyScreen({ navigate }: { navigate: (s: Screen) => void }) {
+  const privacyItems = [
+    {
+      title: 'Temporary Processing',
+      desc: 'Repository contents are processed temporarily during the assessment and are not retained afterwards.',
+    },
+    {
+      title: 'Automatic Deletion',
+      desc: 'Source code and temporary archives are automatically deleted after the assessment completes.',
+    },
+    {
+      title: 'No Permanent Storage',
+      desc: 'TALGED does not permanently store source code or repository contents for later reuse.',
+    },
+    {
+      title: 'Public Repositories Only',
+      desc: 'Only public GitHub repositories or self-submitted ZIP archives can be assessed.',
+    },
+  ]
+
+  return (
+    <div style={{ flex: 1, padding: '48px 56px', overflowY: 'auto' }}>
+      <div style={{ maxWidth: 720 }}>
+        <h1 style={{
+          fontSize: 28, fontWeight: 800, color: '#e2e8f0',
+          margin: '0 0 6px', letterSpacing: '-0.03em',
+        }}>
+          Privacy
+        </h1>
+        <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, margin: '0 0 32px' }}>
+          Your code stays yours. Here is how TALGED protects it.
+        </p>
+
+        {privacyItems.map((item) => (
+          <Card key={item.title} style={{ padding: 24, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>
+              {item.title}
+            </div>
+            <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7 }}>
+              {item.desc}
+            </div>
+          </Card>
+        ))}
+
+        <Button onClick={() => navigate('home')} style={{ alignSelf: 'flex-start' }}>
+          Back to Home
+        </Button>
       </div>
     </div>
   )
@@ -918,7 +1094,7 @@ function ScanConfigScreen({
           }}
         >
           Review the selected repository and the security assessment mechanisms
-          that Ligtask will run.
+          that TALGED will run.
         </p>
 
         <Card
@@ -1012,7 +1188,7 @@ function ScanConfigScreen({
               lineHeight: 1.6,
             }}
           >
-            These mechanisms form the current Ligtask assessment pipeline and
+            These mechanisms form the current TALGED assessment pipeline and
             run automatically as part of the repository assessment.
           </p>
 
@@ -1117,7 +1293,7 @@ function ScanConfigScreen({
               >
                 Repository contents are processed in a temporary workspace and
                 automatically deleted after assessment. Source code and
-                repository archives are not permanently stored by Ligtask.
+                repository archives are not permanently stored by TALGED.
               </div>
             </div>
           </div>
@@ -1162,11 +1338,15 @@ function ScanConfigScreen({
 
 function ScanningScreen({
   assessmentInput,
+  jobStatus,
+  canRetry,
   error,
   onRetry,
   navigate,
 }: {
   assessmentInput: AssessmentInput | null
+  jobStatus: AssessmentJob['status'] | 'submitting'
+  canRetry: boolean
   error: string
   onRetry: () => void
   navigate: (s: Screen) => void
@@ -1199,7 +1379,7 @@ function ScanningScreen({
       ? getGitHubRepositoryName(assessmentInput.repositoryUrl)
       : assessmentInput?.type === 'ZIP'
         ? assessmentInput.file.name
-        : 'No repository selected'
+        : 'Resuming assessment'
 
   if (error) {
     return (
@@ -1229,7 +1409,7 @@ function ScanningScreen({
               margin: '0 0 28px',
             }}
           >
-            Ligtask could not complete the repository assessment.
+            TALGED could not complete the repository assessment.
           </p>
 
           <Card
@@ -1276,7 +1456,7 @@ function ScanningScreen({
               Change Repository
             </Button>
 
-            <Button onClick={onRetry}>
+            <Button onClick={onRetry} disabled={!canRetry}>
               Retry Assessment
             </Button>
           </div>
@@ -1312,7 +1492,7 @@ function ScanningScreen({
             margin: '0 0 32px',
           }}
         >
-          Ligtask is processing and assessing the selected repository.
+          TALGED is processing and assessing the selected repository.
         </p>
 
         <div
@@ -1392,9 +1572,11 @@ function ScanningScreen({
                 lineHeight: 1.65,
               }}
             >
-              The backend currently returns the assessment only after the full
-              pipeline completes, so Ligtask does not display a fabricated
-              percentage or claim that a specific scanner has finished.
+              {jobStatus === 'submitting'
+                ? 'Submitting your repository for assessment…'
+                : jobStatus === 'queued'
+                  ? 'Your assessment is queued and will start when a scanner is available.'
+                  : 'Your assessment is running. Results will appear when processing completes.'}
             </div>
 
             <div
@@ -1502,7 +1684,7 @@ function ScanningScreen({
                   lineHeight: 1.5,
                 }}
               >
-                Please keep this page open while the request is being processed.
+                After submission, you can reload this tab to reconnect to your assessment.
               </div>
             </Card>
 
@@ -1544,10 +1726,6 @@ function ScanningScreen({
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
-type AssessmentStartResponse = {
-  assessment_id: string
-}
-
 function getErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
     return error.message
@@ -1557,7 +1735,8 @@ function getErrorMessage(error: unknown) {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('home')
+  const [resumeJobId] = useState(getPendingJob)
+  const [screen, setScreen] = useState<Screen>(resumeJobId ? 'scanning' : 'home')
 
   const [assessmentInput, setAssessmentInput] =
     useState<AssessmentInput | null>(null)
@@ -1572,7 +1751,28 @@ export default function App() {
     useState('')
 
   const [assessmentRunning, setAssessmentRunning] =
-    useState(false)
+    useState(Boolean(resumeJobId))
+
+  const [jobStatus, setJobStatus] = useState<AssessmentJob['status'] | 'submitting'>(resumeJobId ? 'queued' : 'submitting')
+
+  useEffect(() => {
+    const jobId = resumeJobId
+    if (!jobId) return
+    const controller = new AbortController()
+    waitForAssessment(jobId, setJobStatus, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return
+        setAssessmentId(result.assessment_id)
+        setScreen('results')
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setAssessmentError(getErrorMessage(error))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAssessmentRunning(false)
+      })
+    return () => controller.abort()
+  }, [resumeJobId])
 
   const navigate = (nextScreen: Screen) => {
     setScreen(nextScreen)
@@ -1593,7 +1793,7 @@ export default function App() {
   }
 
   const startAssessment = async () => {
-    if (!assessmentInput || assessmentRunning) {
+    if ((!assessmentInput && !getPendingJob()) || assessmentRunning) {
       return
     }
 
@@ -1602,21 +1802,18 @@ export default function App() {
     setSelectedFinding(null)
     setAssessmentId(null)
     setScreen('scanning')
+    setJobStatus('submitting')
 
     try {
-      let response: AssessmentStartResponse
-
-      if (assessmentInput.type === 'ZIP') {
-        response =
-          await uploadRepository<AssessmentStartResponse>(
-            assessmentInput.file,
-          )
-      } else {
-        response =
-          await assessGitHubRepository<AssessmentStartResponse>(
-            assessmentInput.repositoryUrl,
-          )
+      let jobId = getPendingJob()
+      if (!jobId && assessmentInput) {
+        const job = assessmentInput.type === 'ZIP'
+          ? await uploadRepository(assessmentInput.file)
+          : await assessGitHubRepository(assessmentInput.repositoryUrl)
+        jobId = job.job_id
       }
+      if (!jobId) throw new Error('No assessment job was created.')
+      const response = await waitForAssessment(jobId, setJobStatus)
 
       if (!response?.assessment_id) {
         throw new Error(
@@ -1657,72 +1854,92 @@ export default function App() {
           overflowX: 'hidden',
         }}
       >
-        {screen === 'home' && (
-          <HomeScreen navigate={navigate} />
-        )}
+        <div
+          key={screen + (screen === 'results' ? String(assessmentId) : '')}
+          className="animate-fade-in"
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {screen === 'home' && (
+            <HomeScreen navigate={navigate} />
+          )}
 
-        {screen === 'repo' && (
-          <RepositoryScreen
-            navigate={navigate}
-            onSelectInput={(input) => {
-              setAssessmentInput(input)
-              setAssessmentError('')
-            }}
-          />
-        )}
+          {screen === 'about' && (
+            <AboutScreen navigate={navigate} />
+          )}
 
-        {screen === 'config' && (
-          <ScanConfigScreen
-            navigate={navigate}
-            assessmentInput={assessmentInput}
-            onStartAssessment={startAssessment}
-          />
-        )}
+          {screen === 'privacy' && (
+            <PrivacyScreen navigate={navigate} />
+          )}
 
-        {screen === 'scanning' && (
-          <ScanningScreen
-            navigate={navigate}
-            assessmentInput={assessmentInput}
-            error={assessmentError}
-            onRetry={startAssessment}
-          />
-        )}
-
-        {screen === 'history' && (
-          <HistoryScreen
-            navigate={navigate}
-            onOpenAssessment={openAssessment}
-          />
-        )}
-
-        {screen === 'results' &&
-          assessmentId !== null && (
-            <AssessmentResultsScreen
-              assessmentId={assessmentId}
+          {screen === 'repo' && (
+            <RepositoryScreen
               navigate={navigate}
-              onOpenFinding={openFinding}
-            />
-          )}
-
-        {screen === 'results' &&
-          assessmentId === null && (
-            <div
-              style={{
-                padding: '40px 48px',
-                color: '#94a3b8',
+              onSelectInput={(input) => {
+                setAssessmentInput(input)
+                setAssessmentError('')
               }}
-            >
-              No assessment selected.
-            </div>
-          )}
-
-        {screen === 'detail' &&
-          selectedFinding !== null && (
-            <RealFindingDetailScreen
-              finding={selectedFinding}
-              onBack={() => navigate('results')}
             />
           )}
+
+          {screen === 'config' && (
+            <ScanConfigScreen
+              navigate={navigate}
+              assessmentInput={assessmentInput}
+              onStartAssessment={startAssessment}
+            />
+          )}
+
+          {screen === 'scanning' && (
+            <ScanningScreen
+              jobStatus={jobStatus}
+              canRetry={Boolean(assessmentInput || getPendingJob())}
+              navigate={navigate}
+              assessmentInput={assessmentInput}
+              error={assessmentError}
+              onRetry={startAssessment}
+            />
+          )}
+
+          {screen === 'history' && (
+            <HistoryScreen
+              navigate={navigate}
+              onOpenAssessment={openAssessment}
+            />
+          )}
+
+          {screen === 'results' &&
+            assessmentId !== null && (
+              <AssessmentResultsScreen
+                assessmentId={assessmentId}
+                navigate={navigate}
+                onOpenFinding={openFinding}
+              />
+            )}
+
+          {screen === 'results' &&
+            assessmentId === null && (
+              <div
+                style={{
+                  padding: '40px 48px',
+                  color: '#94a3b8',
+                }}
+              >
+                No assessment selected.
+              </div>
+            )}
+
+          {screen === 'detail' &&
+            selectedFinding !== null && (
+              <RealFindingDetailScreen
+                finding={selectedFinding}
+                onBack={() => navigate('results')}
+              />
+            )}
+        </div>
       </main>
     </div>
   )

@@ -7,7 +7,7 @@ DATABASE_PATH = (
     Path(__file__)
     .resolve()
     .parents[2]
-    / "ligtask.db"
+    / "talged.db"
 )
 
 
@@ -35,7 +35,7 @@ def get_connection():
 
 def initialize_database():
     """
-    Create the Ligtask database tables if
+    Create the TALGED database tables if
     they do not already exist.
 
     The database stores assessment metadata
@@ -172,6 +172,8 @@ def initialize_database():
 
                 guidance_source TEXT,
 
+                recommended_action TEXT,
+
                 FOREIGN KEY (
                     assessment_id
                 )
@@ -233,6 +235,33 @@ def initialize_database():
                 """
             )
 
+        finding_columns = {
+            row["name"]
+            for row in cursor.execute(
+                """
+                PRAGMA table_info(findings);
+                """
+            ).fetchall()
+        }
+
+        if (
+            "recommended_action"
+            not in finding_columns
+        ):
+            cursor.execute(
+                """
+                ALTER TABLE findings
+                ADD COLUMN recommended_action TEXT;
+                """
+            )
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS assessment_owners (
+                assessment_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_assessment_owners_user ON assessment_owners(user_id)")
         connection.commit()
 
     finally:
@@ -466,9 +495,11 @@ def save_assessment(
                     source_rule_ids_json,
                     description,
                     recommendation,
-                    guidance_source
+                    guidance_source,
+                    recommended_action
                 )
                 VALUES (
+                    ?,
                     ?,
                     ?,
                     ?,
@@ -551,6 +582,9 @@ def save_assessment(
                     finding.get(
                         "guidance_source"
                     ),
+                    finding.get(
+                        "recommended_action"
+                    ),
                 ),
             )
 
@@ -564,7 +598,7 @@ def save_assessment(
         connection.close()
 
 
-def get_assessment_count():
+def get_assessment_count(user_id=None):
     """
     Return the number of stored assessments.
 
@@ -576,9 +610,12 @@ def get_assessment_count():
     try:
         row = connection.execute(
             """
-            SELECT COUNT(*) AS total
-            FROM assessments;
-            """
+            SELECT COUNT(*) AS total FROM assessments
+            WHERE (? IS NULL OR id IN (
+                SELECT assessment_id FROM assessment_owners WHERE user_id = ?
+            ));
+            """,
+            (user_id, user_id),
         ).fetchone()
 
         return row["total"]
@@ -726,12 +763,17 @@ def row_to_finding(row):
         "guidance_source": (
             row["guidance_source"]
         ),
+
+        "recommended_action": (
+            row["recommended_action"]
+        ),
     }
 
 
 def get_assessments(
     limit=50,
     offset=0,
+    user_id=None,
 ):
     """
     Retrieve stored assessment history with
@@ -747,11 +789,16 @@ def get_assessments(
             """
             SELECT *
             FROM assessments
+            WHERE (? IS NULL OR id IN (
+                SELECT assessment_id FROM assessment_owners WHERE user_id = ?
+            ))
             ORDER BY created_at DESC
             LIMIT ?
             OFFSET ?;
             """,
             (
+                user_id,
+                user_id,
                 limit,
                 offset,
             ),
@@ -826,6 +873,17 @@ def get_assessment_by_id(
 
     finally:
         connection.close()
+
+def assessment_owned_by(assessment_id, user_id):
+    connection = get_connection()
+    try:
+        return connection.execute(
+            "SELECT 1 FROM assessment_owners WHERE assessment_id = ? AND user_id = ?",
+            (assessment_id, user_id),
+        ).fetchone() is not None
+    finally:
+        connection.close()
+
 
 def database_health_check():
     """

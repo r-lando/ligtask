@@ -2,7 +2,7 @@
 
 ## Evaluation Scope
 
-The formal configuration assessment evaluated Ligtask's production configuration scanner using the frozen 12-case controlled Dockerfile benchmark.
+The formal configuration assessment evaluated TALGED's production configuration scanner using the frozen 12-case controlled Dockerfile benchmark.
 
 The evaluation used the production function:
 
@@ -69,10 +69,10 @@ The raw formal result is excluded from version control and preserved separately 
 
 ## Interpretation
 
-Ligtask achieved 100% precision, recall, specificity, accuracy, and F1-score within the frozen 12-case controlled configuration-assessment dataset.
+TALGED achieved 100% precision, recall, specificity, accuracy, and F1-score within the frozen 12-case controlled configuration-assessment dataset.
 
 These results demonstrate that the implemented configuration scanner correctly detected the expected findings and produced no unexpected findings within the defined benchmark scope.
 
 ## Limitation
 
-The configuration benchmark is intentionally small, synthetic, and aligned with the configuration rules currently supported by Ligtask. The results therefore characterize performance within the frozen controlled dataset and should not be interpreted as evidence that the platform can detect all possible configuration vulnerabilities or misconfigurations.
+The configuration benchmark is intentionally small, synthetic, and aligned with the configuration rules currently supported by TALGED. The results therefore characterize performance within the frozen controlled dataset and should not be interpreted as evidence that the platform can detect all possible configuration vulnerabilities or misconfigurations.

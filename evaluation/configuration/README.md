@@ -6,7 +6,7 @@
 
 
 
-This evaluation measures the behavior of Ligtask's production configuration
+This evaluation measures the behavior of TALGED's production configuration
 
 assessment mechanism against a frozen set of controlled synthetic Dockerfile
 
@@ -266,7 +266,7 @@ tracked evaluation summary using its SHA-256 hash.
 
 The controlled benchmark is intentionally small and constructed around the
 
-configuration rules currently implemented by Ligtask.
+configuration rules currently implemented by TALGED.
 
 
 

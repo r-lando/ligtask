@@ -2,6 +2,7 @@ export type InputType = 'ZIP' | 'GITHUB'
 
 export type AssessmentStatus =
   | 'completed'
+  | 'partial'
   | 'processing'
   | 'failed'
 
@@ -91,6 +92,7 @@ export interface AssessmentFinding {
   description: string
   recommendation: string
   guidance_source: string
+  recommended_action: string
 }
 
 export interface AssessmentDetail

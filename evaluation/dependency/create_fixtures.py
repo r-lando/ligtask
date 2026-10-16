@@ -63,7 +63,7 @@ def build_package_lock(case):
 
     return {
         "name": (
-            f"ligtask-dependency-"
+            f"talged-dependency-"
             f"{case['case_id'].lower()}"
         ),
         "version": "1.0.0",
@@ -72,7 +72,7 @@ def build_package_lock(case):
         "packages": {
             "": {
                 "name": (
-                    f"ligtask-dependency-"
+                    f"talged-dependency-"
                     f"{case['case_id'].lower()}"
                 ),
                 "version": "1.0.0",

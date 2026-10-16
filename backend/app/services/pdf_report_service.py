@@ -1,5 +1,6 @@
 from io import BytesIO
 from xml.sax.saxutils import escape
+from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
@@ -109,7 +110,7 @@ def create_styles():
 
     styles.add(
         ParagraphStyle(
-            name="LigtaskTitle",
+            name="TALGEDTitle",
             parent=styles["Title"],
             fontSize=20,
             leading=24,
@@ -120,7 +121,7 @@ def create_styles():
 
     styles.add(
         ParagraphStyle(
-            name="LigtaskSubtitle",
+            name="TALGEDSubtitle",
             parent=styles["Normal"],
             fontSize=9,
             leading=12,
@@ -1435,7 +1436,7 @@ def add_page_number(
         20 * mm,
         10 * mm,
         (
-            "Ligtask Security "
+            "TALGED Security "
             "Assessment Report"
         ),
     )
@@ -1479,10 +1480,10 @@ def generate_assessment_pdf(
         topMargin=18 * mm,
         bottomMargin=18 * mm,
         title=(
-            "Ligtask Security "
+            "TALGED Security "
             "Assessment Report"
         ),
-        author="Ligtask",
+        author="TALGED",
     )
 
     styles = create_styles()
@@ -1492,25 +1493,28 @@ def generate_assessment_pdf(
     story.append(
         paragraph(
             (
-                "Ligtask Security "
+                "TALGED Security "
                 "Assessment Report"
             ),
-            styles["LigtaskTitle"],
+            styles["TALGEDTitle"],
         )
     )
 
     story.append(
         paragraph(
             (
-                "Privacy-Preserving "
-                "Repository-Aware Security "
-                "Assessment Platform"
+                "Security Assessment "
+                "Platform for Web "
+                "Application Repositories"
             ),
             styles[
-                "LigtaskSubtitle"
+                "TALGEDSubtitle"
             ],
         )
     )
+
+    story.append(paragraph(ASSESSMENT_LIMITATION_NOTE, styles["FindingBody"]))
+    story.append(Spacer(1, 8))
 
     partial_warning = build_partial_warning(
         assessment,
@@ -1702,7 +1706,7 @@ def generate_assessment_pdf(
     )
 
     privacy_notice = (
-        "Ligtask processes submitted "
+        "TALGED processes submitted "
         "repository contents temporarily "
         "for security assessment purposes. "
         "Repository source code and uploaded "

@@ -295,13 +295,13 @@ def test_successful_findings_survive_another_scanner_failure(
     )
 
     secret_finding = make_finding(
-        "Ligtask",
+        "TALGED",
         "SECRET",
         "TEST-SECRET",
     )
 
     config_finding = make_finding(
-        "Ligtask",
+        "TALGED",
         "CONFIGURATION",
         "TEST-CONFIG",
     )
@@ -371,7 +371,7 @@ def test_secret_completed_with_errors_makes_assessment_partial(
     tmp_path,
 ):
     secret_finding = make_finding(
-        "Ligtask",
+        "TALGED",
         "SECRET",
         "TEST-SECRET",
     )
@@ -415,7 +415,7 @@ def test_configuration_completed_with_errors_makes_assessment_partial(
     tmp_path,
 ):
     config_finding = make_finding(
-        "Ligtask",
+        "TALGED",
         "CONFIGURATION",
         "TEST-CONFIG",
     )

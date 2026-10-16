@@ -26,26 +26,33 @@ def extract_npm_dependencies(package_lock_path: Path):
         ) as file:
             lock_data = json.load(file)
 
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, UnicodeError, OSError):
+        return dependencies
+
+    if not isinstance(lock_data, dict):
         return dependencies
 
     packages = lock_data.get("packages", {})
+    if not isinstance(packages, dict):
+        return dependencies
 
     for package_path, package_data in packages.items():
-        if not package_path.startswith("node_modules/"):
+        if (
+            "node_modules/" not in package_path
+            or not isinstance(package_data, dict)
+        ):
             continue
 
         name = package_data.get("name")
         version = package_data.get("version")
 
         if not name:
-            name = package_path.replace(
+            name = package_path.rsplit(
                 "node_modules/",
-                "",
                 1
-            )
+            )[-1]
 
-        if not version:
+        if not isinstance(name, str) or not isinstance(version, str) or not version:
             continue
 
         dependencies.append({

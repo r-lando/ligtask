@@ -1,4 +1,4 @@
-# Ligtask Technical Evaluation
+# TALGED Technical Evaluation
 
 ## Controlled SAST Benchmark
 
@@ -44,7 +44,7 @@ results.
 
 
 
-Before the formal evaluation configuration was frozen, Ligtask
+Before the formal evaluation configuration was frozen, TALGED
 
 used Semgrep with the `auto` configuration. An applicability
 
@@ -176,7 +176,7 @@ processed evaluation summaries.
 Scanner warnings, skipped files, timeouts, and other execution
 limitations must be recorded with the evaluation results.
 
-The OWASP Benchmark evaluates the SAST component of Ligtask.
+The OWASP Benchmark evaluates the SAST component of TALGED.
 Dependency assessment, secret detection, and configuration
 assessment require separate controlled evaluation datasets.
 ## Formal OWASP Benchmark SAST Results

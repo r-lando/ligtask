@@ -8,7 +8,7 @@
 
 This evaluation measures the dependency vulnerability
 
-assessment mechanism implemented in Ligtask. It is separate
+assessment mechanism implemented in TALGED. It is separate
 
 from the controlled SAST evaluation performed using the
 
@@ -18,7 +18,7 @@ OWASP Benchmark.
 
 The evaluation is limited to dependency functionality that
 
-is currently implemented in Ligtask.
+is currently implemented in TALGED.
 
 
 
@@ -38,7 +38,7 @@ package-lock.json
 
 \-> vulnerability matching
 
-\-> Ligtask dependency finding
+\-> TALGED dependency finding
 
 
 
@@ -50,7 +50,7 @@ Python, Maven, Gradle, Composer, and other dependency
 
 ecosystems are outside the current evaluation scope because
 
-Ligtask does not currently implement dependency extraction
+TALGED does not currently implement dependency extraction
 
 for those ecosystems.
 
@@ -80,11 +80,11 @@ Each case contains:
 
 &#x20; package/version at the time the ground truth is frozen; and
 
-\- a package-lock.json fixture processed by Ligtask.
+\- a package-lock.json fixture processed by TALGED.
 
 
 
-A vulnerable case is considered detected when Ligtask
+A vulnerable case is considered detected when TALGED
 
 reports at least one OSV vulnerability identifier that
 
@@ -100,7 +100,7 @@ expected OSV vulnerability identifiers is reported.
 
 
 
-A non-vulnerable control passes when Ligtask reports no OSV
+A non-vulnerable control passes when TALGED reports no OSV
 
 vulnerability for the package/version according to the
 
@@ -108,7 +108,7 @@ frozen ground truth.
 
 
 
-Any vulnerability identifier returned by Ligtask that is
+Any vulnerability identifier returned by TALGED that is
 
 not contained in the frozen expected set will be recorded
 
@@ -124,7 +124,7 @@ false positive without verification.
 
 
 
-Ground truth will be established before the formal Ligtask
+Ground truth will be established before the formal TALGED
 
 execution.
 
@@ -164,7 +164,7 @@ The frozen ground truth will record:
 
 The ground-truth records will not be changed in response to
 
-the subsequent Ligtask evaluation results.
+the subsequent TALGED evaluation results.
 
 
 
@@ -180,7 +180,7 @@ OSV at the documented evaluation time.
 
 
 
-Cases will be selected before the formal Ligtask evaluation
+Cases will be selected before the formal TALGED evaluation
 
 results are observed.
 
@@ -194,7 +194,7 @@ package/version cases and non-vulnerable controls.
 
 Package/version cases will not be added, removed, or changed
 
-because of their observed Ligtask results.
+because of their observed TALGED results.
 
 
 
@@ -288,7 +288,7 @@ evaluation.
 
 
 
-The dependency evaluation assesses Ligtask's use of OSV for
+The dependency evaluation assesses TALGED's use of OSV for
 
 known dependency vulnerabilities. It does not demonstrate
 
@@ -311,7 +311,7 @@ the evaluation is not dominated by multiple versions of a
 single package.
 
 Candidate cases will be evaluated using direct OSV
-package/version queries before any formal Ligtask execution.
+package/version queries before any formal TALGED execution.
 
 A candidate is eligible as a vulnerable case when the
 direct OSV query for its exact npm package/version returns
@@ -323,18 +323,18 @@ returns no vulnerability identifiers at the time the
 ground truth is collected.
 
 Selection eligibility is determined only from the direct
-OSV ground-truth query. Ligtask output must not be inspected
+OSV ground-truth query. TALGED output must not be inspected
 or used when deciding whether a candidate is included.
 
 Once 5 vulnerable and 5 non-vulnerable eligible cases have
 been selected and their ground truth has been frozen, the
 formal case list will not be changed because of subsequent
-Ligtask results.
+TALGED results.
 
 For each selected case, the exact package name, version,
 expected OSV identifiers, collection timestamp, and
 ground-truth artifact hash will be recorded before the
-formal Ligtask evaluation is executed.
+formal TALGED evaluation is executed.
 
 The purpose of the controlled dataset is to verify the
 implemented dependency-assessment pipeline under known

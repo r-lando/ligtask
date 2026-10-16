@@ -360,7 +360,7 @@ def main():
 
     output = {
         "evaluation": (
-            "Ligtask dependency assessment"
+            "TALGED dependency assessment"
         ),
         "scope": (
             "npm package-lock.json exact "

@@ -1,4 +1,5 @@
 from html import escape
+from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE
 
 from app.services.database_service import (
     get_assessment_by_id,
@@ -589,7 +590,7 @@ def generate_assessment_html(
     >
 
     <title>
-        Ligtask Security Assessment Report
+        TALGED Security Assessment Report
     </title>
 
     <style>
@@ -680,15 +681,17 @@ def generate_assessment_html(
 <body>
 
     <h1>
-        Ligtask Security Assessment Report
+        TALGED Security Assessment Report
     </h1>
 
     <p class="muted">
-        Privacy-Preserving Repository-Aware
         Security Assessment Platform
+        for Web Application Repositories
     </p>
 
     {partial_warning}
+
+    <p class="muted">{safe_text(ASSESSMENT_LIMITATION_NOTE)}</p>
 
     <h2>
         Assessment Information
@@ -912,7 +915,7 @@ def generate_assessment_html(
         <strong>Privacy Notice</strong>
 
         <p>
-            Ligtask processes submitted
+            TALGED processes submitted
             repository contents temporarily
             for security assessment purposes.
             Repository source code and uploaded
