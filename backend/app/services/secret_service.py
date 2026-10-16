@@ -397,6 +397,7 @@ def scan_secrets(repository_path: Path):
                     )
                 for finding in line_findings:
                     if (line_number in firebase_lines and re.search(r"\bapiKey\s*:", line)
+                            and len(list(next(rule["pattern"] for rule in SECRET_RULES if rule["id"] == "generic-secret-assignment").finditer(line))) == 1
                             and finding["rule_id"] == "generic-secret-assignment"):
                         finding.update(rule_id="firebase-browser-config", severity="INFO",
                                        title="Firebase Browser Configuration - Review Access Settings")

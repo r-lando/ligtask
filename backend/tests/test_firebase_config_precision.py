@@ -20,3 +20,13 @@ def test_api_key_without_full_firebase_context_stays_secret_candidate(tmp_path):
     findings = scan_secrets(tmp_path)["findings"]
     assert findings[0]["rule_id"] == "generic-secret-assignment"
     assert findings[0]["severity"] == "MEDIUM"
+
+
+def test_private_password_on_same_line_as_firebase_key_is_not_downgraded(tmp_path):
+    (tmp_path / "config.js").write_text('''const firebaseConfig = {
+apiKey: "SyntheticKeyValue123", password: "PrivatePassword123",
+authDomain: "app.firebaseapp.com", projectId: "app", appId: "app-id"
+};''')
+    findings = scan_secrets(tmp_path)["findings"]
+    assert len(findings) == 2
+    assert all(f["rule_id"] == "generic-secret-assignment" and f["severity"] == "MEDIUM" for f in findings)
