@@ -19,6 +19,24 @@ SEVERITY_RANK = {
 #
 # This avoids fuzzy or probabilistic matching.
 CORRELATION_RULES = {
+    "overlapping-eval-warnings": {
+        "title": "Request Input Evaluated as JavaScript",
+        "category": "SAST",
+        "rule_ids": {
+            "semgrep_rules.v1.javascript.lang.security.audit.code-string-concat",
+            "semgrep_rules.v1.javascript.browser.security.eval-detected",
+        },
+        "message": "Two rules identify the same eval call, including request-derived input flowing to it. Replace dynamic evaluation with parsing and validation appropriate to the expected data. Both rule IDs are retained; this is code evidence, not proof of a successful deployed attack.",
+    },
+    "overlapping-sql-warnings": {
+        "title": "Overlapping SQL Construction Warnings",
+        "category": "SAST",
+        "rule_ids": {
+            "semgrep_rules.v1.javascript.express.security.injection.tainted-sql-string",
+            "semgrep_rules.v1.javascript.sequelize.security.audit.sequelize-raw-query",
+        },
+        "message": "Two rules report overlapping SQL-construction code starting on this line. Review request input and use parameterized queries. Grouping preserves both rule IDs and does not prove exploitability or that all SQL issues in this file are the same issue.",
+    },
     "browser-html-write": {
         "title": "HTML Content Written by JavaScript",
         "category": "SAST",
@@ -91,10 +109,14 @@ def find_correlation_group(rule_id):
     if not rule_id:
         return None
 
+    # Semgrep includes the config's repository-relative prefix when invoked
+    # from the repository root rather than backend/. Keep evidence IDs intact.
+    lookup_id = rule_id.removeprefix("backend.") if rule_id.startswith("backend.semgrep_rules.v1.") else rule_id
+
     for group_id, group in (
         CORRELATION_RULES.items()
     ):
-        if rule_id in group["rule_ids"]:
+        if lookup_id in group["rule_ids"]:
             return group_id
 
     return None
@@ -123,7 +145,17 @@ def create_correlation_key(finding):
     if not file_path:
         return None
 
-    if group_id == "browser-html-write":
+    if group_id == "overlapping-eval-warnings":
+        # Require the exact call range, not just a shared or adjacent line.
+        start, end = finding.get("match_start"), finding.get("match_end")
+        if not all(isinstance(p, (list, tuple)) and len(p) == 2
+                   and all(type(v) is int and v > 0 for v in p) for p in (start, end)):
+            return None
+        if tuple(start) >= tuple(end) or start[0] != finding.get("line"):
+            return None
+        return (group_id, file_path.replace("\\", "/"), tuple(start), tuple(end))
+
+    if group_id in {"browser-html-write", "overlapping-sql-warnings"}:
         # Only the known overlapping pair at the exact same location.
         # Do not combine separate writes or case-distinct repository files.
         line = finding.get("line")
@@ -308,6 +340,26 @@ def build_correlated_finding(
     }
 
 
+def paired_ranges_overlap(findings):
+    """Only one occurrence of each known rule, with valid overlapping ranges.
+
+    Missing legacy locations and ambiguous multiple occurrences stay separate.
+    """
+    if len(findings) != 2 or len({f.get("rule_id") for f in findings}) != 2:
+        return False
+    spans = []
+    for finding in findings:
+        start, end = finding.get("match_start"), finding.get("match_end")
+        if not all(isinstance(p, (list, tuple)) and len(p) == 2
+                   and all(type(v) is int and v > 0 for v in p) for p in (start, end)):
+            return False
+        start, end = tuple(start), tuple(end)
+        if start >= end or start[0] != finding.get("line"):
+            return False
+        spans.append((start, end))
+    return max(s[0] for s in spans) < min(s[1] for s in spans)
+
+
 def correlate_findings(findings):
     """
     Correlate explicitly equivalent findings.
@@ -359,6 +411,10 @@ def correlate_findings(findings):
     ) in grouped_findings.items():
 
         group_id = correlation_key[0]
+
+        if group_id in {"overlapping-sql-warnings", "overlapping-eval-warnings"} and not paired_ranges_overlap(group_findings):
+            consolidated_findings.extend(build_single_finding(f) for f in group_findings)
+            continue
 
         if len(group_findings) == 1:
             consolidated_findings.append(

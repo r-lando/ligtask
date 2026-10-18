@@ -32,3 +32,32 @@ rules:
       $EL.innerHTML = "...";
   - pattern-not: |
       $EL.innerHTML = "..." || "...";
+  - pattern-either:
+    - patterns:
+      - pattern: $EL.innerHTML = $HTML;
+      - pattern-not: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+    - patterns:
+      - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+      - pattern-not-inside: |
+          import $PURIFY from 'dompurify';
+          ...
+    - pattern-inside: |
+        ...
+        $PURIFY.setConfig(...);
+        ...
+    - pattern-inside: |
+        ...
+        $PURIFY.addHook(...);
+        ...
+    - patterns:
+      - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+      - pattern-inside: |
+          function ...(..., $PURIFY, ...) { ... }
+    - patterns:
+      - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+      - pattern-inside: |
+          (..., $PURIFY, ...) => { ... }
+    - pattern-inside: |
+        ...
+        $PURIFY.sanitize = $REPLACEMENT;
+        ...

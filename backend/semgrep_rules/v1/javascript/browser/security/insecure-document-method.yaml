@@ -40,3 +40,46 @@ rules:
   - pattern-not: document.write("...")
   - pattern-not: |
       $EL.innerHTML = "..." || "...";
+  - pattern-either:
+    - patterns:
+      - pattern-either:
+        - pattern: $EL.innerHTML = $HTML;
+        - pattern: $EL.outerHTML = $HTML;
+        - pattern: document.write(...);
+      - pattern-not: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+      - pattern-not: $EL.outerHTML = $PURIFY.sanitize($INPUT);
+      - pattern-not: document.write($PURIFY.sanitize($INPUT));
+    - patterns:
+      - pattern-either:
+        - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+        - pattern: $EL.outerHTML = $PURIFY.sanitize($INPUT);
+        - pattern: document.write($PURIFY.sanitize($INPUT));
+      - pattern-not-inside: |
+          import $PURIFY from 'dompurify';
+          ...
+    - pattern-inside: |
+        ...
+        $PURIFY.setConfig(...);
+        ...
+    - pattern-inside: |
+        ...
+        $PURIFY.addHook(...);
+        ...
+    - patterns:
+      - pattern-either:
+        - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+        - pattern: $EL.outerHTML = $PURIFY.sanitize($INPUT);
+        - pattern: document.write($PURIFY.sanitize($INPUT));
+      - pattern-inside: |
+          function ...(..., $PURIFY, ...) { ... }
+    - patterns:
+      - pattern-either:
+        - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+        - pattern: $EL.outerHTML = $PURIFY.sanitize($INPUT);
+        - pattern: document.write($PURIFY.sanitize($INPUT));
+      - pattern-inside: |
+          (..., $PURIFY, ...) => { ... }
+    - pattern-inside: |
+        ...
+        $PURIFY.sanitize = $REPLACEMENT;
+        ...

@@ -1,10 +1,10 @@
 rules:
 - id: path-join-resolve-traversal
   message: >-
-    Detected possible user input going into a `path.join` or `path.resolve`
-    function. This could possibly lead to a path traversal vulnerability, 
-    where the attacker can access arbitrary files stored in the file system.
-    Instead, be sure to sanitize or validate user input first.
+    Request-derived data reaches path.join or path.resolve. Joining or normalizing
+    a path does not establish that it stays inside an allowed directory. Review
+    validation and the later file operation; this match alone does not prove
+    that arbitrary files are accessible.
   metadata:
     owasp:
     - A05:2017 - Broken Access Control
@@ -31,13 +31,12 @@ rules:
   severity: WARNING
   mode: taint
   pattern-sources:
-  - patterns:
-    - focus-metavariable: $X
-    - pattern-either:
-      - pattern-inside: |
-          function ... (...,$X,...) {...}
-      - pattern-inside: |
-          function ... (...,{...,$X,...},...) {...}
+  - pattern: $REQ.query
+  - pattern: $REQ.body
+  - pattern: $REQ.params
+  - pattern: $REQ.cookies
+  - pattern: $REQ.headers
+  - pattern: $REQ.files
   pattern-sinks:
   - patterns:
     - focus-metavariable: $SINK
@@ -59,17 +58,3 @@ rules:
     - pattern-either:
       - pattern-inside: path.join(...,$SINK,...)
       - pattern-inside: path.resolve(...,$SINK,...)
-  pattern-sanitizers:
-  - pattern: $Y.replace(...)
-  - pattern: $Y.indexOf(...)
-  - pattern: |
-      function ... (...) {
-          ...
-          <... $Y.indexOf(...) ...>
-          ...
-      }
-  - patterns:
-    - pattern: $FUNC(...)
-    - metavariable-regex:
-        metavariable: $FUNC
-        regex: sanitize
