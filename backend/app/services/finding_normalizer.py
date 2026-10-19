@@ -112,6 +112,8 @@ def normalize_semgrep_findings(
             ),
 
             "line": finding.get("line"),
+            "match_start": finding.get("match_start"),
+            "match_end": finding.get("match_end"),
 
             "message": finding.get(
                 "message"

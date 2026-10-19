@@ -12,6 +12,10 @@ def test_request_shell_exec_aliases_and_safe_arguments(tmp_path):
         "constant.js": "const exec = require('child_process').exec; function handler(req, res) { exec('echo ready'); }",
         "argv.js": "const {execFile} = require('child_process'); function handler(req, res) { execFile('ping', ['-c', '2', req.body.address]); }",
         "unrelated.js": "function exec(value) { return value; } function handler(req, res) { exec(req.body.value); }",
+        "helper.js": "const {exec} = require('child_process'); function ping(host) { exec('ping ' + host); } function handler(req, res) { ping(req.body.host); }",
+        "helper-fixed.js": "const {exec} = require('child_process'); function ping(host) { exec('echo ready'); } function handler(req, res) { ping(req.body.host); }",
+        "helper-argv.js": "const {execFile} = require('child_process'); function ping(host) { execFile('ping', ['--', host]); } function handler(req, res) { ping(req.body.host); }",
+        "helper-shadow.js": "const {exec} = require('child_process'); function ping(host) { exec('ping ' + host); } function handler(req, res, ping) { ping(req.body.host); }",
     }
     for filename, content in cases.items():
         (tmp_path / filename).write_text(content, encoding="utf-8")
@@ -21,5 +25,5 @@ def test_request_shell_exec_aliases_and_safe_arguments(tmp_path):
     ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
     findings = json.loads(result.stdout)["results"]
-    assert {f["path"].replace("\\", "/").rsplit("/", 1)[-1] for f in findings} == {"property.js", "destructure.js", "import.js"}
-    assert len(findings) == 3
+    assert {f["path"].replace("\\", "/").rsplit("/", 1)[-1] for f in findings} == {"property.js", "destructure.js", "import.js", "helper.js"}
+    assert len(findings) == 4

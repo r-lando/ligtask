@@ -1,0 +1,57 @@
+rules:
+  - id: koa-request-sequelize-query
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Koa request input reaches a Sequelize SQL query string, including through a pushed array value. Review the input path and use separately supplied query values rather than building SQL text from user input. Input checks alone do not establish that SQL construction is safe. This match is not proof of a deployed attack.
+    metadata:
+      category: security
+      technology: [koa, sequelize]
+      confidence: MEDIUM
+      cwe: 'CWE-89: SQL Injection'
+      references:
+        - https://sequelize.org/docs/v6/core-concepts/raw-queries/
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              const $ROUTER = require('koa-router');
+              ...
+          - pattern-inside: |
+              new $ROUTER(...).$VERB(..., ($CTX, ...) => { ... });
+          - pattern-either:
+              - pattern: $CTX.query
+              - pattern: $CTX.request.body
+          - metavariable-regex:
+              metavariable: $VERB
+              regex: '^(get|post|put|patch|delete|all)$'
+          - pattern-not-inside: |
+              function $INNER(..., $CTX, ...) { ... }
+          - pattern-not-inside: |
+              function $INNER(..., $ROUTER, ...) { ... }
+          - pattern-not-inside: |
+              const $HELPER = (..., $CTX, ...) => { ... };
+    pattern-propagators:
+      - pattern: $LIST.push($INPUT)
+        from: $INPUT
+        to: $LIST
+    pattern-sinks:
+      - patterns:
+          - pattern-inside: |
+              const {Sequelize: $SEQ} = require('sequelize');
+              ...
+          - pattern-either:
+              - pattern: new $SEQ(...).query($SQL, ...)
+              - patterns:
+                  - pattern-inside: |
+                      const $DB = new $SEQ(...);
+                      ...
+                  - pattern: $DB.query($SQL, ...)
+                  - pattern-not-inside: |
+                      function ...(..., $DB, ...) { ... }
+                  - pattern-not-inside: |
+                      (..., $DB, ...) => { ... }
+          - pattern-not-inside: |
+              function ...(..., $SEQ, ...) { ... }
+          - pattern-not-inside: |
+              (..., $SEQ, ...) => { ... }
+          - focus-metavariable: $SQL

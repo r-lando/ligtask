@@ -1,6 +1,45 @@
 from copy import deepcopy
 
 
+# Exact known rule IDs only; never infer a fix from an arbitrary title/message.
+TARGETED_GUIDANCE = {
+    "pg-open": {
+        "recommendation": "Check the flagged :value placeholder and the SQL quotes around it. Prefer a normal value placeholder and pass the value separately, letting pg-promise handle quoting. Do not use double quotes to surround SQL string values. Test inputs containing quotes and SQL-like text. This scan has not tested a deployed attack.",
+        "action": "Replace the open :value placeholder with normal value formatting and separately supplied input.",
+    },
+    "pg-raw": {
+        "recommendation": "Check the flagged pg-promise value and its matching placeholder. Replace :raw or ^ with a normal escaped value placeholder for user data, keeping the value separate from the SQL text. For table or column names, choose from a fixed allowed list and use the library's identifier formatting instead of raw user text. Test inputs containing quotes and unexpected SQL text. This scan has not tested a deployed attack.",
+        "action": "Remove raw SQL formatting from the user-controlled value; use normal value formatting.",
+    },
+    "sql": {
+        "recommendation": "Check where the query values come from. Keep the SQL statement separate from user input: use your database library's parameter placeholders and pass values separately, rather than joining them into the query text. For table names, column names, or sort options, choose from a fixed allowed list. Test normal inputs and inputs containing quotes; they should be treated as data, not SQL instructions. This scan has not tested a deployed attack.",
+        "action": "Replace joined SQL values with parameter placeholders and separately supplied values.",
+    },
+    "shell": {
+        "recommendation": "Check whether a user can control the command or its arguments. Prefer a library that performs the task without running a shell. If a process is needed, choose a fixed non-shell executable, pass arguments separately with shell mode disabled, and allow only the values and options your app needs. Passing an argument list to sh or bash with -c still runs shell commands. Test that unexpected options and command characters cannot change the intended task. This scan has not tested a deployed attack.",
+        "action": "Stop putting user input into shell commands; use a fixed non-shell program with validated arguments.",
+    },
+    "eval": {
+        "recommendation": "Check where the evaluated text comes from. Do not run user input as JavaScript. For numbers, convert the input to a number and reject non-finite or out-of-range values before using it. For JSON, use JSON.parse and validate the resulting structure. For calculations, use a restricted expression parser rather than eval or Function. Test that invalid input is rejected without being executed. This scan has not tested a deployed attack.",
+        "action": "Replace dynamic JavaScript execution with parsing and validation for the data you expect.",
+    },
+}
+TARGETED_RULES = {
+    "semgrep_rules.v1.javascript.express.security.injection.koa-request-sequelize-query": "sql",
+    "semgrep_rules.v1.javascript.express.security.injection.pg-promise-request-open-value": "pg-open",
+    "semgrep_rules.v1.javascript.express.security.injection.pg-promise-request-raw-value": "pg-raw",
+    "overlapping-sql-warnings": "sql",
+    "semgrep_rules.v1.javascript.express.security.injection.tainted-sql-string": "sql",
+    "semgrep_rules.v1.javascript.sequelize.security.audit.express-sequelize-injection": "sql",
+    "semgrep_rules.v1.javascript.sequelize.security.audit.sequelize-raw-query": "sql",
+    "overlapping-eval-warnings": "eval",
+    "semgrep_rules.v1.javascript.browser.security.eval-detected": "eval",
+    "semgrep_rules.v1.javascript.lang.security.audit.code-string-concat": "eval",
+    **{f"semgrep_rules.v1.javascript.express.security.injection.{name}": "shell" for name in (
+        "request-to-shell-exec", "request-to-shell-exec-helper", "request-to-explicit-shell-arguments")},
+}
+
+
 REMEDIATION_RULES = {
     "firebase-browser-config": {
         "description": "An API key was found in a Firebase browser configuration object. These keys identify the project and are normally public. This is not a confirmed private-secret leak; access restrictions were not checked.",
@@ -419,6 +458,14 @@ def enrich_finding(finding):
 
     if rule_id == "firebase-browser-config":
         enriched["recommended_action"] = "Review Firebase access rules and key restrictions; public configuration alone is not a private-secret leak."
+    canonical_rule = str(rule_id or "").removeprefix("backend.")
+    family = TARGETED_RULES.get(canonical_rule)
+    if finding.get("category") == "SAST" and family:
+        guidance = TARGETED_GUIDANCE[family]
+        enriched["recommendation"] = guidance["recommendation"]
+        enriched["recommended_action"] = guidance["action"]
+        enriched["guidance_source"] = "TALGED Rule Guidance"
+        # Keep scanner description/message, locations, severity and evidence intact.
     return enriched
 
 

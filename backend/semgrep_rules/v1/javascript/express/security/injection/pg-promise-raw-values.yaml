@@ -1,0 +1,110 @@
+rules:
+  - id: pg-promise-request-open-value
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input reaches a pg-promise :value placeholder outside a SQL single-quoted value. This formatting omits the surrounding quotes; double quotes do not make a SQL string value. Prefer normal value placeholders with separately supplied values. This match is not proof of a deployed attack.
+    metadata:
+      category: security
+      technology: [nodejs, pg-promise]
+      confidence: MEDIUM
+      cwe: 'CWE-89: SQL Injection'
+      references:
+        - https://github.com/vitaly-t/pg-promise#open-values
+    pattern-sources:
+      - pattern: $REQ.params.$FIELD
+      - pattern: $REQ.query.$FIELD
+      - pattern: $REQ.body.$FIELD
+    pattern-sinks:
+      - patterns:
+          - pattern-inside: |
+              const $PGP = require('pg-promise')();
+              ...
+          - pattern-inside: |
+              const $DB = $PGP(...);
+              ...
+          - pattern: '$DB.$METHOD({text: $SQL, values: {$KEY: $VALUE, ...}, ...}, ...)'
+          # Bounded double-quoted JS query literal: consume SQL single-quoted
+          # regions as whole tokens, so a placeholder within one is not a sink.
+          # Only escaped double quotes are accepted as JS escapes here.
+          - pattern-either:
+              - pattern-regex: '(?s)\b[A-Za-z_$][A-Za-z_0-9$]*\.[A-Za-z_][A-Za-z_0-9]*\(\{\s*text\s*:\s*"(?:\\"|[^"\\\x27]|\x27(?:\x27\x27|[^\x27\\])*\x27)*?\$\{(?P<OPENKEY>[A-Za-z_][A-Za-z_0-9]*)\}:value\b(?:\\"|[^"\\])*"\s*,\s*values\s*:\s*\{[^{}]*\}\s*,?\s*\}\)'
+              - pattern-regex: '(?s)\b[A-Za-z_$][A-Za-z_0-9$]*\.[A-Za-z_][A-Za-z_0-9]*\(\{\s*text\s*:\s*"(?:\\"|[^"\\\x27]|\x27(?:\x27\x27|[^\x27\\])*\x27)*\$\{(?P<OPENKEY>[A-Za-z_][A-Za-z_0-9]*)\}:value\b(?:\\"|[^"\\])*"\s*,\s*values\s*:\s*\{[^{}]*\}\s*,?\s*\}\)'
+          - metavariable-comparison:
+              comparison: str($KEY) == str($OPENKEY)
+          - metavariable-regex:
+              metavariable: $SQL
+              regex: '(?s)^(?!.*(?:--|/\*|\*/|\$\$)).*$'
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: '^(any|many|manyOrNone|map|multi|multiResult|none|one|oneOrNone|query|result)$'
+          - pattern-not-regex: '\.\.\.'
+          - pattern-not-inside: |
+              function ...(..., $DB, ...) { ... }
+          - pattern-not-inside: |
+              (..., $DB, ...) => { ... }
+          - focus-metavariable: $VALUE
+  - id: pg-promise-request-raw-value
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input is supplied to a pg-promise raw SQL placeholder. Raw formatting inserts SQL text rather than safely handling a value. Use a normal value placeholder instead of :raw or ^, and validate the expected input. This match is not proof of a deployed attack.
+    metadata:
+      category: security
+      technology: [nodejs, pg-promise]
+      confidence: HIGH
+      cwe: 'CWE-89: SQL Injection'
+      references:
+        - https://github.com/vitaly-t/pg-promise#raw-text
+    pattern-sources:
+      - pattern: $REQ.params.$FIELD
+      - pattern: $REQ.query.$FIELD
+      - pattern: $REQ.body.$FIELD
+    pattern-sinks:
+      - patterns:
+          - pattern-inside: |
+              const $PGP = require('pg-promise')();
+              ...
+          - pattern-inside: |
+              const $DB = $PGP(...);
+              ...
+          - pattern-either:
+              - patterns:
+                  - pattern: '$DB.$METHOD({text: $SQL, values: {$KEY: $VALUE, ...}, ...}, ...)'
+                  - pattern-regex: '(?s)text\s*:\s*(?P<QUOTE>["\x27])(?P<SQLTEXT>(?:(?!(?P=QUOTE)).)*?\$\{(?P<RAWKEY>[A-Za-z_][A-Za-z_0-9]*)\}(?::raw\b|\^)(?:(?!(?P=QUOTE)).)*)(?P=QUOTE)\s*,\s*values\s*:\s*\{[^{}]*\}'
+                  - metavariable-comparison:
+                      comparison: str($KEY) == str($RAWKEY)
+                  - metavariable-comparison:
+                      comparison: $SQL == str($SQLTEXT)
+                  - pattern-not-regex: '\.\.\.'
+              - patterns:
+                  - pattern: '$DB.$METHOD({text: $SQL, values: $VALUE, ...}, ...)'
+                  - pattern-not: '$DB.$METHOD({text: $SQL, values: [...], ...}, ...)'
+                  - pattern-not: '$DB.$METHOD({text: $SQL, values: {...}, ...}, ...)'
+                  - metavariable-pattern:
+                      metavariable: $VALUE
+                      pattern-either:
+                        - pattern: $REQ.params.$FIELD
+                        - pattern: $REQ.query.$FIELD
+                        - pattern: $REQ.body.$FIELD
+                  - metavariable-regex:
+                      metavariable: $SQL
+                      regex: '.*\$1(?::raw\b|\^)'
+              - patterns:
+                  - pattern: '$DB.$METHOD({text: $SQL, values: [$VALUE, ...], ...}, ...)'
+                  - metavariable-regex:
+                      metavariable: $SQL
+                      regex: '.*\$1(?::raw\b|\^)'
+              - patterns:
+                  - pattern: '$DB.$METHOD({text: $SQL, values: [$FIRST, $VALUE, ...], ...}, ...)'
+                  - metavariable-regex:
+                      metavariable: $SQL
+                      regex: '.*\$2(?::raw\b|\^)'
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: '^(any|many|manyOrNone|map|multi|multiResult|none|one|oneOrNone|query|result)$'
+          - pattern-not-inside: |
+              function ...(..., $DB, ...) { ... }
+          - pattern-not-inside: |
+              (..., $DB, ...) => { ... }
+          - focus-metavariable: $VALUE
