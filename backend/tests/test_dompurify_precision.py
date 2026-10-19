@@ -17,6 +17,10 @@ def test_direct_sanitizer_does_not_hide_raw_or_modified_html(tmp_path):
         "shadow.js": "import DOMPurify from 'dompurify'; function render(DOMPurify, input) { el.innerHTML = DOMPurify.sanitize(input); }",
         "arrow-shadow.js": "import DOMPurify from 'dompurify'; const render = (DOMPurify, input) => { el.innerHTML = DOMPurify.sanitize(input); };",
         "replaced.js": "import DOMPurify from 'dompurify'; DOMPurify.sanitize = x => x; el.innerHTML = DOMPurify.sanitize(input);",
+        "local-const.js": "import DOMPurify from 'dompurify'; function render(input) { const DOMPurify = {sanitize: x => x}; el.innerHTML = DOMPurify.sanitize(input); }",
+        "local-let.js": "import purify from 'dompurify'; function render(input) { let purify = {sanitize: x => x}; el.outerHTML = purify.sanitize(input); }",
+        "local-var.js": "import DOMPurify from 'dompurify'; function render(input) { var DOMPurify = {sanitize: x => x}; document.write(DOMPurify.sanitize(input)); }",
+        "nested-block.js": "import DOMPurify from 'dompurify'; function render(input) { { const DOMPurify = {sanitize: x => x}; el.innerHTML = DOMPurify.sanitize(input); } }",
     }
     for name, source in cases.items():
         (tmp_path / name).write_text(source, encoding="utf-8")
@@ -28,6 +32,8 @@ def test_direct_sanitizer_does_not_hide_raw_or_modified_html(tmp_path):
     results = json.loads(run.stdout)["results"]
     assert {path_name(f["path"]) for f in results} == set(cases) - {"clean.js", "alias.js"}
     assert sum(path_name(f["path"]) == "neighbor.js" for f in results) == 2
+    assert sum(path_name(f["path"]) == "local-const.js" for f in results) == 2
+    assert sum(path_name(f["path"]) == "nested-block.js" for f in results) == 2
 
 
 def path_name(value):

@@ -57,6 +57,24 @@ rules:
       - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
       - pattern-inside: |
           (..., $PURIFY, ...) => { ... }
+    - patterns:
+      - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+      - pattern-inside: |
+          ...
+          const $PURIFY = $LOCAL;
+          ...
+    - patterns:
+      - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+      - pattern-inside: |
+          ...
+          let $PURIFY = $LOCAL;
+          ...
+    - patterns:
+      - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+      - pattern-inside: |
+          ...
+          var $PURIFY = $LOCAL;
+          ...
     - pattern-inside: |
         ...
         $PURIFY.sanitize = $REPLACEMENT;

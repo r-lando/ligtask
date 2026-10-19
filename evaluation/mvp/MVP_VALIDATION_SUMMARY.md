@@ -49,6 +49,15 @@ files must not be interpreted as checked-safe code.
 
 ## Open issues and scope decisions
 
+PR review follow-up: the HTML sanitizer exception now retains warnings when a
+local const/let/var binding shadows the imported sanitizer. Regression examples
+cover innerHTML, outerHTML, document.write and a nested block. The frozen hashes
+above describe earlier checkpoints, not this revised ruleset; rerun the benchmark
+to record the current byte digest. This is a bounded syntactic safeguard, not a
+claim that all JavaScript binding or cross-file mutation cases are resolved.
+The isolated revised-tree benchmark matched all 14 expected outcomes; its rules
+SHA256 is `c77d2efd7d33122fe1e479ca7e28905988765e3387a64a26f19409d09a5a3f2f`.
+
 1. Keep the seven external command misses visible; see [external validation](EXTERNAL_VALIDATION.md).
 2. Keep Angular/sqlite3 in the miss ledger. Decide its MVP support scope explicitly
    before adding rules; do not silently exclude it or label it safe.

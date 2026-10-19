@@ -79,6 +79,24 @@ rules:
         - pattern: document.write($PURIFY.sanitize($INPUT));
       - pattern-inside: |
           (..., $PURIFY, ...) => { ... }
+    - patterns:
+      - pattern-either:
+        - pattern: $EL.innerHTML = $PURIFY.sanitize($INPUT);
+        - pattern: $EL.outerHTML = $PURIFY.sanitize($INPUT);
+        - pattern: document.write($PURIFY.sanitize($INPUT));
+      - pattern-either:
+        - pattern-inside: |
+            ...
+            const $PURIFY = $LOCAL;
+            ...
+        - pattern-inside: |
+            ...
+            let $PURIFY = $LOCAL;
+            ...
+        - pattern-inside: |
+            ...
+            var $PURIFY = $LOCAL;
+            ...
     - pattern-inside: |
         ...
         $PURIFY.sanitize = $REPLACEMENT;
