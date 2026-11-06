@@ -21,6 +21,9 @@ def test_direct_sanitizer_does_not_hide_raw_or_modified_html(tmp_path):
         "local-let.js": "import purify from 'dompurify'; function render(input) { let purify = {sanitize: x => x}; el.outerHTML = purify.sanitize(input); }",
         "local-var.js": "import DOMPurify from 'dompurify'; function render(input) { var DOMPurify = {sanitize: x => x}; document.write(DOMPurify.sanitize(input)); }",
         "nested-block.js": "import DOMPurify from 'dompurify'; function render(input) { { const DOMPurify = {sanitize: x => x}; el.innerHTML = DOMPurify.sanitize(input); } }",
+        "assigned-let.js": "import DOMPurify from 'dompurify'; function render(input) { let DOMPurify; DOMPurify = {sanitize: x=>x}; el.innerHTML = DOMPurify.sanitize(input); }",
+        "assigned-var.js": "import DOMPurify from 'dompurify'; function render(input) { var DOMPurify; DOMPurify = {sanitize: x=>x}; el.outerHTML = DOMPurify.sanitize(input); }",
+        "assigned-write.js": "import purify from 'dompurify'; function render(input) { let purify; purify = {sanitize: x=>x}; document.write(purify.sanitize(input)); }",
     }
     for name, source in cases.items():
         (tmp_path / name).write_text(source, encoding="utf-8")

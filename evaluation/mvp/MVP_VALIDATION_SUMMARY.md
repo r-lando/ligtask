@@ -1,5 +1,11 @@
 # MVP validation checkpoint — 2026-10-19
 
+Final merge review follow-up: HTML writes using a locally shadowed sanitizer
+declared without an initializer and assigned later now retain their warnings.
+InnerHTML, outerHTML and document.write regression cases were added; the genuine
+imported-sanitizer controls remain unflagged. The isolated PR #5 suite passed
+214 tests (two existing dependency deprecation warnings).
+
 TALGED identifies specific risky source-code patterns. A warning is evidence to
 review, not proof that an attacker can exploit a deployed application. No findings
 does not mean an application is secure. This checkpoint is not a release approval
