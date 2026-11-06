@@ -30,3 +30,11 @@ def test_scanner_failure_cannot_produce_a_clean_score(monkeypatch):
     monkeypatch.setattr(benchmark, "scan_secrets", lambda folder: {"scan_status": "completed"})
     with pytest.raises(RuntimeError, match="no clean result"):
         benchmark.evaluate()
+
+
+@pytest.mark.parametrize("status", ["partial", "not_run", None])
+def test_incomplete_scans_cannot_produce_accuracy_scores(monkeypatch, status):
+    monkeypatch.setattr(benchmark, "run_semgrep", lambda folder: {"success": True, "scan_status": status})
+    monkeypatch.setattr(benchmark, "scan_secrets", lambda folder: {"scan_status": "completed"})
+    with pytest.raises(RuntimeError, match="no clean result"):
+        benchmark.evaluate()
