@@ -47,7 +47,8 @@ def evaluate():
             (folder / f"{name}.{extension}").write_text(source + "\n", encoding="utf-8")
         sast = run_semgrep(folder)
         secrets = scan_secrets(folder)
-        if not sast["success"] or secrets["scan_status"] != "completed":
+        if (not sast["success"] or sast.get("scan_status") != "completed"
+                or secrets["scan_status"] != "completed"):
             raise RuntimeError("Benchmark scanner failed; no clean result or accuracy score can be reported.")
         findings = sast["findings"] + secrets["findings"]
         rows = []

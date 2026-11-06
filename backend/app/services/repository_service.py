@@ -460,13 +460,14 @@ def run_assessment_pipeline(
         "success"
     ):
         sast_status = {
-            "status": "completed",
+            "status": semgrep_results.get("scan_status", "completed"),
             "scanner": "Semgrep",
             "findings_count": len(
                 normalized_sast_findings
             ),
             "error": None,
             "note": semgrep_results.get("note"),
+            "coverage": semgrep_results.get("coverage"),
         }
 
     elif semgrep_results.get(

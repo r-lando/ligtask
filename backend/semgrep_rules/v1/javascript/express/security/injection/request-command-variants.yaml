@@ -1,0 +1,145 @@
+rules:
+  - id: request-to-command-executable
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input selects the executable or Node module to launch. Choose a fixed program or module and pass validated data separately. A match does not establish a deployed attack.
+    metadata:
+      category: security
+      technology: [nodejs]
+      confidence: HIGH
+      cwe: 'CWE-78: OS Command Injection'
+    pattern-sources: &request_sources
+      - pattern: $REQ.body.$FIELD
+      - pattern: $REQ.query.$FIELD
+      - pattern: $REQ.params.$FIELD
+      - pattern: $URL.parse($REQ.url, true).query.$FIELD
+    pattern-sinks:
+      - patterns:
+          - pattern-either: &child_process_imports
+              - pattern-inside: |
+                  const $CP = require('child_process');
+                  ...
+              - pattern-inside: |
+                  var $CP = require('child_process');
+                  ...
+          - pattern: $CP.$METHOD($COMMAND, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: '^(execFile|execFileSync|fork)$'
+          - pattern-not-inside: |
+              function ...(..., $CP, ...) { ... }
+          - pattern-not-inside: |
+              (..., $CP, ...) => { ... }
+          - focus-metavariable: $COMMAND
+
+  - id: request-to-promisified-shell-exec
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input reaches a shell command through util.promisify(child_process.exec). Promises do not change shell interpretation. Prefer a fixed non-shell program with validated arguments. A match does not establish a deployed attack.
+    metadata:
+      category: security
+      technology: [nodejs]
+      confidence: HIGH
+      cwe: 'CWE-78: OS Command Injection'
+    pattern-sources: *request_sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either: *child_process_imports
+          - pattern-either:
+              - pattern-inside: |
+                  const $UTIL = require('util');
+                  ...
+              - pattern-inside: |
+                  var $UTIL = require('util');
+                  ...
+          - pattern: $UTIL.promisify($CP.exec)($COMMAND, ...)
+          - pattern-not-inside: |
+              function ...(..., $CP, ...) { ... }
+          - pattern-not-inside: |
+              (..., $CP, ...) => { ... }
+          - pattern-not-inside: |
+              function ...(..., $UTIL, ...) { ... }
+          - pattern-not-inside: |
+              (..., $UTIL, ...) => { ... }
+          - focus-metavariable: $COMMAND
+
+  - id: request-to-assigned-promisified-shell-exec
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input reaches a const alias of util.promisify(child_process.exec). Assigning or binding the wrapper does not remove shell interpretation. Prefer a fixed non-shell program with validated arguments. A match does not establish a deployed attack.
+    metadata:
+      category: security
+      technology: [nodejs]
+      confidence: HIGH
+      cwe: 'CWE-78: OS Command Injection'
+    pattern-sources:
+      - pattern: $REQ.body
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $URL.parse($REQ.url, true).query.$FIELD
+    pattern-sinks:
+      - patterns:
+          - pattern-either: *child_process_imports
+          - pattern-either:
+              - pattern-inside: |
+                  const $UTIL = require('util');
+                  ...
+              - pattern-inside: |
+                  var $UTIL = require('util');
+                  ...
+          - pattern-either:
+              - pattern-inside: |
+                  const $RUN = $UTIL.promisify($CP.exec);
+                  ...
+              - pattern-inside: |
+                  const $RUN = $UTIL.promisify($CP.exec.bind($CP));
+                  ...
+          - pattern: $RUN($COMMAND, ...)
+          - pattern-not-inside: |
+              function ...(..., $CP, ...) { ... }
+          - pattern-not-inside: |
+              (..., $CP, ...) => { ... }
+          - pattern-not-inside: |
+              function ...(..., $UTIL, ...) { ... }
+          - pattern-not-inside: |
+              (..., $UTIL, ...) => { ... }
+          - pattern-not-inside: |
+              function ...(..., $RUN, ...) { ... }
+          - pattern-not-inside: |
+              (..., $RUN, ...) => { ... }
+          - focus-metavariable: $COMMAND
+
+  - id: request-to-windows-shell-tail
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input is appended to cmd.exe /c command arguments. Windows command-shell interpretation can make these extra values part of the command. Use a fixed non-shell program with validated arguments. A match does not establish a deployed attack.
+    metadata:
+      category: security
+      technology: [nodejs, windows]
+      confidence: HIGH
+      cwe: 'CWE-78: OS Command Injection'
+    pattern-sources: *request_sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either: *child_process_imports
+          - pattern: $CP.$METHOD($SHELL, [$FLAG, $FIXED].concat($TAIL), ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: '^(spawn|spawnSync|execFile|execFileSync)$'
+          - metavariable-pattern:
+              metavariable: $SHELL
+              pattern: '"cmd.exe"'
+          - metavariable-pattern:
+              metavariable: $FLAG
+              pattern-either:
+                - pattern: '"/C"'
+                - pattern: '"/c"'
+          - pattern-not-inside: |
+              function ...(..., $CP, ...) { ... }
+          - pattern-not-inside: |
+              (..., $CP, ...) => { ... }
+          - focus-metavariable: $TAIL

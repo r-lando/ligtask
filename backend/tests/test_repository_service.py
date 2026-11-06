@@ -191,6 +191,19 @@ def test_pipeline_is_completed_when_all_mechanisms_complete(
     )
 
 
+def test_incomplete_sast_marks_assessment_partial_and_retains_findings(monkeypatch, tmp_path):
+    finding = make_finding("Semgrep", "SAST", "test-rule")
+    configure_common_pipeline_mocks(monkeypatch, semgrep_result={
+        "success": True, "scan_status": "partial", "note": "Files skipped: 1.",
+        "coverage": {"files_scanned": 1, "files_skipped": 1},
+    }, sast_findings=[finding])
+    result = repository_service.run_assessment_pipeline(tmp_path)
+    assert result["assessment_status"] == "partial"
+    assert result["mechanism_statuses"]["sast"]["status"] == "partial"
+    assert result["mechanism_statuses"]["sast"]["coverage"]["files_skipped"] == 1
+    assert finding in result["raw_findings"]
+
+
 def test_dependency_completed_with_errors_makes_assessment_partial(
     monkeypatch,
     tmp_path,

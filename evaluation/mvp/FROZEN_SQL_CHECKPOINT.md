@@ -1,5 +1,9 @@
 # Frozen-rules external SQL checkpoint - 2026-10-19
 
+Follow-up: [2026-10-28 refinement](SCAN_COMPLETENESS.md) detects the previously
+missed `tst4.js` query. The results below describe the original frozen ruleset;
+the example is now used for development and no longer serves as a fresh holdout.
+
 No production rule changes were made after selecting these previously unused
 files or seeing their outcomes. Rules SHA256 remains
 `a67180ec4fb5f03431c0be30deefbcee29840437f77a89c90eecfe8aa200bded`.

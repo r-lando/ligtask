@@ -3,6 +3,10 @@ from copy import deepcopy
 
 # Exact known rule IDs only; never infer a fix from an arbitrary title/message.
 TARGETED_GUIDANCE = {
+    "executable": {
+        "recommendation": "Check who chooses the program or Node module being launched. Choose a fixed executable or module, or select from a small fixed allowed list. Pass user values separately as validated arguments and keep shell mode disabled. A separate argument list does not make a user-selected executable safe. Test that input cannot choose a different program or module. This scan has not tested a deployed attack.",
+        "action": "Use a fixed executable or module and pass validated values as arguments.",
+    },
     "pg-open": {
         "recommendation": "Check the flagged :value placeholder and the SQL quotes around it. Prefer a normal value placeholder and pass the value separately, letting pg-promise handle quoting. Do not use double quotes to surround SQL string values. Test inputs containing quotes and SQL-like text. This scan has not tested a deployed attack.",
         "action": "Replace the open :value placeholder with normal value formatting and separately supplied input.",
@@ -25,6 +29,8 @@ TARGETED_GUIDANCE = {
     },
 }
 TARGETED_RULES = {
+    "semgrep_rules.v1.javascript.express.security.injection.request-to-command-executable": "executable",
+    "semgrep_rules.v1.javascript.express.security.injection.angular-route-sqlite-query": "sql",
     "semgrep_rules.v1.javascript.express.security.injection.koa-request-sequelize-query": "sql",
     "semgrep_rules.v1.javascript.express.security.injection.pg-promise-request-open-value": "pg-open",
     "semgrep_rules.v1.javascript.express.security.injection.pg-promise-request-raw-value": "pg-raw",
@@ -36,7 +42,8 @@ TARGETED_RULES = {
     "semgrep_rules.v1.javascript.browser.security.eval-detected": "eval",
     "semgrep_rules.v1.javascript.lang.security.audit.code-string-concat": "eval",
     **{f"semgrep_rules.v1.javascript.express.security.injection.{name}": "shell" for name in (
-        "request-to-shell-exec", "request-to-shell-exec-helper", "request-to-explicit-shell-arguments")},
+        "request-to-shell-exec", "request-to-shell-exec-helper", "request-to-explicit-shell-arguments",
+        "request-to-promisified-shell-exec", "request-to-assigned-promisified-shell-exec", "request-to-windows-shell-tail")},
 }
 
 

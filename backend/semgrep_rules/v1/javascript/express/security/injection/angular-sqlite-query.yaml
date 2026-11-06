@@ -1,0 +1,55 @@
+rules:
+  - id: angular-route-sqlite-query
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Angular route input reaches the SQL text of a sqlite3 query. Use a fixed SQL statement with placeholders and pass values separately. Review the input path; this match does not establish a deployed attack.
+    metadata:
+      category: security
+      technology: [angularjs, sqlite3]
+      confidence: MEDIUM
+      cwe: 'CWE-89: SQL Injection'
+    pattern-sources:
+      - patterns:
+          - pattern: $routeParams.$FIELD
+          - pattern-inside: |
+              $APP.controller(..., function(..., $routeParams, ...) { ... });
+          - pattern-not-inside: |
+              $APP.controller(..., function(..., $routeParams, ...) {
+                ...
+                function $INNER(..., $routeParams, ...) { ... }
+                ...
+              });
+          - pattern-not-inside: |
+              $APP.controller(..., function(..., $routeParams, ...) {
+                ...
+                const $HELPER = (..., $routeParams, ...) => { ... };
+                ...
+              });
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  const $SQLITE = require('sqlite3').verbose();
+                  ...
+              - pattern-inside: |
+                  var $SQLITE = require('sqlite3').verbose();
+                  ...
+              - pattern-inside: |
+                  const $SQLITE = require('sqlite3');
+                  ...
+              - pattern-inside: |
+                  var $SQLITE = require('sqlite3');
+                  ...
+          - pattern-inside: |
+              var $DB = new $SQLITE.Database(...);
+              ...
+          - pattern: $DB.$METHOD($QUERY, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: '^(get|all|run|each|exec|prepare)$'
+          - pattern-not-inside: |
+              function ...(..., $DB, ...) { ... }
+          - pattern-not-inside: |
+              (..., $DB, ...) => { ... }
+          - focus-metavariable: $QUERY
