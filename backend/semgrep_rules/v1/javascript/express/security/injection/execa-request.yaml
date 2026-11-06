@@ -1,0 +1,85 @@
+rules:
+  - id: execa-request-shell-command
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input reaches a legacy Execa shell or shellSync command. These APIs interpret shell syntax. Prefer a fixed executable with validated arguments and shell mode disabled. Review the installed Execa version and input path; this match does not establish a deployed attack.
+    metadata:
+      category: security
+      technology: [nodejs, execa]
+      confidence: HIGH
+      cwe: 'CWE-78: OS Command Injection'
+      references: ['https://github.com/sindresorhus/execa/tree/v1.0.0#execashellcommand-options']
+    pattern-sources: &sources
+      - pattern: $REQ.body
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $URL.parse($REQ.url, true).query.$FIELD
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern-either: &bindings
+                      - pattern-inside: |
+                          const $EXE = require('execa');
+                          ...
+                      - pattern-inside: |
+                          var $EXE = require('execa');
+                          ...
+                      - pattern-inside: |
+                          import $EXE from 'execa';
+                          ...
+                  - pattern: $EXE.$METHOD($COMMAND, ...)
+                  - pattern-not-inside: |
+                      function ...(..., $EXE, ...) { ... }
+                  - pattern-not-inside: |
+                      (..., $EXE, ...) => { ... }
+              - pattern: require('execa').$METHOD($COMMAND, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: '^(shell|shellSync)$'
+          - focus-metavariable: $COMMAND
+
+  - id: execa-request-command-program
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input selects the program or Node script launched by Execa. Choose a fixed executable or script and pass validated data separately. An argument list does not make a user-selected program safe. Review the installed API version and input path; this match does not establish a deployed attack.
+    metadata:
+      category: security
+      technology: [nodejs, execa]
+      confidence: HIGH
+      cwe: 'CWE-78: OS Command Injection'
+      references: ['https://github.com/sindresorhus/execa/tree/v5.1.1#api']
+    pattern-sources: *sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern-either:
+                      - pattern-either: *bindings
+                      - pattern-inside: |
+                          import {execa as $EXE} from 'execa';
+                          ...
+                  - pattern: $EXE($PROGRAM, ...)
+                  - pattern-not-inside: |
+                      function ...(..., $EXE, ...) { ... }
+                  - pattern-not-inside: |
+                      (..., $EXE, ...) => { ... }
+              - pattern: require('execa')($PROGRAM, ...)
+              - patterns:
+                  - pattern-either: *bindings
+                  - pattern: $EXE.$METHOD($PROGRAM, ...)
+                  - metavariable-regex:
+                      metavariable: $METHOD
+                      regex: '^(sync|node|stdout|stderr)$'
+                  - pattern-not-inside: |
+                      function ...(..., $EXE, ...) { ... }
+                  - pattern-not-inside: |
+                      (..., $EXE, ...) => { ... }
+              - patterns:
+                  - pattern: require('execa').$METHOD($PROGRAM, ...)
+                  - metavariable-regex:
+                      metavariable: $METHOD
+                      regex: '^(sync|node|stdout|stderr)$'
+          - focus-metavariable: $PROGRAM

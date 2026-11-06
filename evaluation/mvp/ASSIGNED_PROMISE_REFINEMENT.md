@@ -50,7 +50,8 @@ the preserved misses; exit 2 means invalid execution with no new score.
 
 The focused PR also includes earlier local scanner-completeness reporting and
 Angular/sqlite3 detection; authentication, demo account, UI, quota and source
-revision changes are excluded. PR #5 remains its review base until merged.
+revision changes are excluded. PR #5 was its initial review base; final review
+retargeted PR #6 to master after PR #5 merged, and both PRs are now merged.
 
 Verification of the isolated staged PR tree: 240 backend tests passed, with two
 existing dependency deprecation warnings. The focused alias/command/guidance run
