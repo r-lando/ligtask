@@ -1,363 +1,117 @@
 rules:
+  # Missing domain/path/expiry are valid defaults, not standalone vulnerabilities.
   - id: express-cookie-session-default-name
-    message: >-
-      Don’t use the default session cookie name
-      Using the default session cookie name can open your app to attacks.
-      The security issue posed is similar to X-Powered-By: a potential attacker can use it to fingerprint the server and target attacks accordingly.
+    message: The default session cookie name may identify the middleware in use. This is an informational hardening observation, not evidence of an exploitable vulnerability.
+    severity: INFO
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      technology: [express]
+      confidence: MEDIUM
+      references: ['https://expressjs.com/en/resources/middleware/session/']
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $SESSION = require('express-session');
+              ...
+          - pattern-inside: |
+              $SESSION = require('cookie-session');
+              ...
+      - pattern: $SESSION({...})
+      - pattern-not: |
+          $SESSION({..., name: $NAME, ...})
+
+  - id: express-session-httponly-disabled
+    message: Session cookies explicitly disable httpOnly, allowing client-side JavaScript to read them. Review whether this is necessary; session cookies should normally use httpOnly true.
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
-      cwe:
-      - 'CWE-522: Insufficiently Protected Credentials'
-      owasp:
-      - A02:2017 - Broken Authentication
-      - A04:2021 - Insecure Design
-      - A06:2025 - Insecure Design
-      source-rule-url: https://expressjs.com/en/advanced/best-practice-security.html
       category: security
-      technology:
-      - express
-      cwe2021-top25: true
-      subcategory:
-      - vuln
-      likelihood: HIGH
-      impact: LOW
-      confidence: MEDIUM
-      references:
-      - https://owasp.org/Top10/A04_2021-Insecure_Design
-    patterns:
-      - pattern-either:
+      technology: [express]
+      confidence: HIGH
+      references: ['https://expressjs.com/en/resources/middleware/session/', 'https://expressjs.com/en/resources/middleware/cookie-session/']
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              $SESSION = require('express-session');
+              ...
+          - pattern: |
+              $SESSION({..., cookie: {..., httpOnly: false, ...}, ...})
+      - patterns:
+          - pattern-inside: |
+              $SESSION = require('express-session');
+              ...
+          - pattern-inside: |
+              $OPTIONS = {..., cookie: {..., httpOnly: false, ...}, ...};
+              ...
+          - pattern: $SESSION($OPTIONS)
+      - patterns:
+          - pattern-inside: |
+              $SESSION = require('cookie-session');
+              ...
+          - pattern: |
+              $SESSION({..., httpOnly: false, ...})
+      - patterns:
           - pattern-inside: |
               $SESSION = require('cookie-session');
               ...
           - pattern-inside: |
-              $SESSION = require('express-session');
+              $OPTIONS = {..., httpOnly: false, ...};
               ...
-      - pattern: $SESSION(...)
-      - pattern-not-inside: $SESSION(<... {name:...} ...>,...)
-      - pattern-not-inside: |
-          $OPTS = <... {name:...} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.name = ...;
-          ...
-          $SESSION($OPTS,...);
-  - id: express-cookie-session-no-secure
-    message: >-
-      Default session middleware settings: `secure` not set.
-      It ensures the browser only sends the cookie over HTTPS.
+          - pattern: $SESSION($OPTIONS)
+
+  - id: express-session-secure-disabled
+    message: Session cookies explicitly disable secure, so the cookie setting does not restrict transmission to HTTPS. Review the deployment and enable secure cookies for production HTTPS.
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
-      cwe:
-      - 'CWE-522: Insufficiently Protected Credentials'
-      owasp:
-      - A02:2017 - Broken Authentication
-      - A04:2021 - Insecure Design
-      - A06:2025 - Insecure Design
-      source-rule-url: https://expressjs.com/en/advanced/best-practice-security.html
       category: security
-      technology:
-      - express
-      cwe2021-top25: true
-      subcategory:
-      - vuln
-      likelihood: HIGH
-      impact: LOW
-      confidence: MEDIUM
-      references:
-      - https://owasp.org/Top10/A04_2021-Insecure_Design
-    patterns:
-      - pattern-either:
+      technology: [express]
+      confidence: HIGH
+      references: ['https://expressjs.com/en/resources/middleware/session/', 'https://expressjs.com/en/resources/middleware/cookie-session/']
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              $SESSION = require('express-session');
+              ...
+          - pattern: |
+              $SESSION({..., cookie: {..., secure: false, ...}, ...})
+      - patterns:
+          - pattern-inside: |
+              $SESSION = require('express-session');
+              ...
+          - pattern-inside: |
+              $OPTIONS = {..., cookie: {..., secure: false, ...}, ...};
+              ...
+          - pattern: $SESSION($OPTIONS)
+      - patterns:
+          - pattern-inside: |
+              $SESSION = require('cookie-session');
+              ...
+          - pattern: |
+              $SESSION({..., secure: false, ...})
+      - patterns:
           - pattern-inside: |
               $SESSION = require('cookie-session');
               ...
           - pattern-inside: |
-              $SESSION = require('express-session');
+              $OPTIONS = {..., secure: false, ...};
               ...
-      - pattern: $SESSION(...)
-      - pattern-not-inside: $SESSION(<... {cookie:{secure:true}} ...>,...)
-      - pattern-not-inside: |
-          $OPTS = <... {cookie:{secure:true}} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE = <... {secure:true} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie = <... {secure:true} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE.secure = true;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie.secure = true;
-          ...
-          $SESSION($OPTS,...);
-  - id: express-cookie-session-no-httponly
-    message: >-
-      Default session middleware settings: `httpOnly` not set.
-      It ensures the cookie is sent only over HTTP(S), not client JavaScript, helping to protect against cross-site scripting attacks.
-    severity: WARNING
+          - pattern: $SESSION($OPTIONS)
+
+  - id: express-session-secure-not-configured
+    message: No explicit secure cookie setting was found in these literal express-session options. Its default does not require HTTPS. Review production configuration; this observation alone does not prove a deployed vulnerability.
+    severity: INFO
     languages: [javascript, typescript]
     metadata:
-      cwe:
-      - 'CWE-522: Insufficiently Protected Credentials'
-      owasp:
-      - A02:2017 - Broken Authentication
-      - A04:2021 - Insecure Design
-      - A06:2025 - Insecure Design
-      source-rule-url: https://expressjs.com/en/advanced/best-practice-security.html
       category: security
-      technology:
-      - express
-      cwe2021-top25: true
-      subcategory:
-      - vuln
-      likelihood: HIGH
-      impact: LOW
+      technology: [express]
       confidence: MEDIUM
-      references:
-      - https://owasp.org/Top10/A04_2021-Insecure_Design
+      references: ['https://expressjs.com/en/resources/middleware/session/']
     patterns:
-      - pattern-either:
-          - pattern-inside: |
-              $SESSION = require('cookie-session');
-              ...
-          - pattern-inside: |
-              $SESSION = require('express-session');
-              ...
-      - pattern: $SESSION(...)
-      - pattern-not-inside: $SESSION(<... {cookie:{httpOnly:true}} ...>,...)
-      - pattern-not-inside: |
-          $OPTS = <... {cookie:{httpOnly:true}} ...>;
+      - pattern-inside: |
+          $SESSION = require('express-session');
           ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE = <... {httpOnly:true} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie = <... {httpOnly:true} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE.httpOnly = true;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie.httpOnly = true;
-          ...
-          $SESSION($OPTS,...);
-  - id: express-cookie-session-no-domain
-    message: >-
-      Default session middleware settings: `domain` not set.
-      It indicates the domain of the cookie; use it to compare against the domain of the server in which the URL is being requested.
-      If they match, then check the path attribute next.
-    severity: WARNING
-    languages: [javascript, typescript]
-    metadata:
-      cwe:
-      - 'CWE-522: Insufficiently Protected Credentials'
-      owasp:
-      - A02:2017 - Broken Authentication
-      - A04:2021 - Insecure Design
-      - A06:2025 - Insecure Design
-      source-rule-url: https://expressjs.com/en/advanced/best-practice-security.html
-      category: security
-      technology:
-      - express
-      cwe2021-top25: true
-      subcategory:
-      - vuln
-      likelihood: HIGH
-      impact: LOW
-      confidence: MEDIUM
-      references:
-      - https://owasp.org/Top10/A04_2021-Insecure_Design
-    patterns:
-      - pattern-either:
-          - pattern-inside: |
-              $SESSION = require('cookie-session');
-              ...
-          - pattern-inside: |
-              $SESSION = require('express-session');
-              ...
-      - pattern: $SESSION(...)
-      - pattern-not-inside: $SESSION(<... {cookie:{domain:...}} ...>,...)
-      - pattern-not-inside: |
-          $OPTS = <... {cookie:{domain:...}} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE = <... {domain:...} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie = <... {domain:...} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE.domain = ...;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie.domain = ...;
-          ...
-          $SESSION($OPTS,...);
-  - id: express-cookie-session-no-path
-    message: >-
-      Default session middleware settings: `path` not set.
-      It indicates the path of the cookie; use it to compare against the request path. If this and domain match, then send the cookie in the request.
-    severity: WARNING
-    languages: [javascript, typescript]
-    metadata:
-      cwe:
-      - 'CWE-522: Insufficiently Protected Credentials'
-      owasp:
-      - A02:2017 - Broken Authentication
-      - A04:2021 - Insecure Design
-      - A06:2025 - Insecure Design
-      source-rule-url: https://expressjs.com/en/advanced/best-practice-security.html
-      category: security
-      technology:
-      - express
-      cwe2021-top25: true
-      subcategory:
-      - vuln
-      likelihood: HIGH
-      impact: LOW
-      confidence: MEDIUM
-      references:
-      - https://owasp.org/Top10/A04_2021-Insecure_Design
-    patterns:
-      - pattern-either:
-          - pattern-inside: |
-              $SESSION = require('cookie-session');
-              ...
-          - pattern-inside: |
-              $SESSION = require('express-session');
-              ...
-      - pattern: $SESSION(...)
-      - pattern-not-inside: $SESSION(<... {cookie:{path:...}} ...>,...)
-      - pattern-not-inside: |
-          $OPTS = <... {cookie:{path:...}} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE = <... {path:...} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie = <... {path:...} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE.path = ...;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie.path = ...;
-          ...
-          $SESSION($OPTS,...);
-  - id: express-cookie-session-no-expires
-    message: >-
-      Default session middleware settings: `expires` not set.
-      Use it to set expiration date for persistent cookies.
-    severity: WARNING
-    languages: [javascript, typescript]
-    metadata:
-      cwe:
-      - 'CWE-522: Insufficiently Protected Credentials'
-      owasp:
-      - A02:2017 - Broken Authentication
-      - A04:2021 - Insecure Design
-      - A06:2025 - Insecure Design
-      source-rule-url: https://expressjs.com/en/advanced/best-practice-security.html
-      category: security
-      technology:
-      - express
-      cwe2021-top25: true
-      subcategory:
-      - vuln
-      likelihood: HIGH
-      impact: LOW
-      confidence: MEDIUM
-      references:
-      - https://owasp.org/Top10/A04_2021-Insecure_Design
-    patterns:
-      - pattern-either:
-          - pattern-inside: |
-              $SESSION = require('cookie-session');
-              ...
-          - pattern-inside: |
-              $SESSION = require('express-session');
-              ...
-      - pattern: $SESSION(...)
-      - pattern-not-inside: $SESSION(<... {cookie:{expires:...}} ...>,...)
-      - pattern-not-inside: |
-          $OPTS = <... {cookie:{expires:...}} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE = <... {expires:...} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $OPTS.cookie = <... {expires:...} ...>;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |
-          $OPTS = ...;
-          ...
-          $COOKIE.expires = ...;
-          ...
-          $SESSION($OPTS,...);
-      - pattern-not-inside: |-
-          $OPTS = ...;
-          ...
-          $OPTS.cookie.expires = ...;
-          ...
-          $SESSION($OPTS,...);
+      - pattern: $SESSION({...})
+      - pattern-not: |
+          $SESSION({..., cookie: {..., secure: $VALUE, ...}, ...})

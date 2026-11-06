@@ -1,4 +1,78 @@
 rules:
+  - id: request-to-explicit-shell-arguments
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request input reaches an explicit shell command argument. Separate arguments do not prevent command injection when the executable is a shell interpreting that argument. Use a fixed non-shell executable with validated arguments where possible. This match is not proof of successful exploitation.
+    metadata:
+      category: security
+      technology: [nodejs]
+      confidence: HIGH
+      cwe: 'CWE-78: OS Command Injection'
+    pattern-sources:
+      - pattern: $REQ.body.$FIELD
+      - pattern: $REQ.query.$FIELD
+      - pattern: $REQ.params.$FIELD
+      - pattern: $URL.parse($REQ.url, true).query.$FIELD
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  const $CP = require('child_process');
+                  ...
+              - pattern-inside: |
+                  var $CP = require('child_process');
+                  ...
+          - pattern-either:
+              - pattern: $CP.$METHOD($SHELL, [$FLAG, $COMMAND], ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(execFile|execFileSync|spawn|spawnSync)$
+          - metavariable-pattern:
+              metavariable: $SHELL
+              pattern-either:
+                - pattern: '"sh"'
+                - pattern: '"/bin/sh"'
+                - pattern: '"bash"'
+                - pattern: '"/bin/bash"'
+          - metavariable-pattern:
+              metavariable: $FLAG
+              pattern: '"-c"'
+          - focus-metavariable: $COMMAND
+          - pattern-not-inside: |
+              function ...(..., $CP, ...) { ... }
+          - pattern-not-inside: |
+              (..., $CP, ...) => { ... }
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  const $CP = require('child_process');
+                  ...
+              - pattern-inside: |
+                  var $CP = require('child_process');
+                  ...
+          - pattern-inside: |
+              $ARGS = [];
+              $ARGS[0] = "-c";
+              $ARGS[1] = $INPUT;
+              $CP.$METHOD($SHELL, $ARGS, ...);
+              ...
+          - pattern: $CP.$METHOD($SHELL, $ARGS, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(execFile|execFileSync|spawn|spawnSync)$
+          - metavariable-pattern:
+              metavariable: $SHELL
+              pattern-either:
+                - pattern: '"sh"'
+                - pattern: '"/bin/sh"'
+                - pattern: '"bash"'
+                - pattern: '"/bin/bash"'
+          - pattern-not-inside: |
+              function ...(..., $CP, ...) { ... }
+          - pattern-not-inside: |
+              (..., $CP, ...) => { ... }
+          - focus-metavariable: $ARGS
   - id: request-to-shell-exec
     languages: [javascript, typescript]
     severity: ERROR
@@ -27,3 +101,42 @@ rules:
                   ...
           - pattern: $EXEC($CMD, ...)
           - focus-metavariable: $CMD
+  - id: request-to-shell-exec-helper
+    languages: [javascript, typescript]
+    severity: ERROR
+    mode: taint
+    message: Request data is passed to a local helper that concatenates its argument into a shell command. Review the input path and use a fixed executable with validated arguments. This match is not proof of successful exploitation.
+    metadata:
+      category: security
+      technology: [express, nodejs]
+      confidence: MEDIUM
+      cwe: 'CWE-78: OS Command Injection'
+    pattern-sources:
+      - pattern: $REQ.body.$FIELD
+      - pattern: $REQ.query.$FIELD
+      - pattern: $REQ.params.$FIELD
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  const $EXEC = require('child_process').exec;
+                  ...
+              - pattern-inside: |
+                  const {exec: $EXEC} = require('child_process');
+                  ...
+              - pattern-inside: |
+                  import {exec as $EXEC} from 'child_process';
+                  ...
+          - pattern-inside: |
+              function $HELPER($PARAM) {
+                ...
+                $EXEC("..." + $PARAM, ...);
+                ...
+              }
+              ...
+          - pattern: $HELPER($ARG)
+          - pattern-not-inside: |
+              function ...(..., $HELPER, ...) { ... }
+          - pattern-not-inside: |
+              (..., $HELPER, ...) => { ... }
+          - focus-metavariable: $ARG

@@ -163,6 +163,8 @@ def run_semgrep(repository_path: Path):
                 ).get(
                     "line"
                 ),
+                "match_start": [finding.get("start", {}).get("line"), finding.get("start", {}).get("col")],
+                "match_end": [finding.get("end", {}).get("line"), finding.get("end", {}).get("col")],
                 "severity": finding.get(
                     "extra",
                     {},
