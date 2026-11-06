@@ -1,5 +1,10 @@
 # Externally sourced validation pilot
 
+Latest follow-up: [2026-11-06 command refinement](COMMAND_VARIANTS_REFINEMENT.md)
+improves this development set to sixteen detected and one missed, with all seven
+fixed controls unflagged. The historical counts below describe earlier rules.
+The follow-up also records an unseen wrapper file that exposed additional gaps.
+
 ## Scope and label policy
 
 This is a small, externally sourced command-injection comparison, not blind

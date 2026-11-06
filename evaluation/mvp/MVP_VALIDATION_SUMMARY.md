@@ -1,5 +1,13 @@
 # MVP validation checkpoint — 2026-10-19
 
+Latest alias extension and external API coverage gaps:
+[assigned promise validation](ASSIGNED_PROMISE_REFINEMENT.md).
+
+Later checkpoints: [scan completeness and SQL refinement](SCAN_COMPLETENESS.md)
+and [command refinement](COMMAND_VARIANTS_REFINEMENT.md). The command development
+set now has one remaining miss rather than seven; a newly selected wrapper file
+exposed twenty-three additional misses. The original counts below are historical.
+
 TALGED identifies specific risky source-code patterns. A warning is evidence to
 review, not proof that an attacker can exploit a deployed application. No findings
 does not mean an application is secure. This checkpoint is not a release approval

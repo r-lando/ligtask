@@ -51,6 +51,45 @@ def semgrep_failure(
     }
 
 
+def scan_coverage(output):
+    """Summarize execution evidence without exposing paths or scanner messages."""
+    paths = output.get("paths")
+    known = isinstance(paths, dict) and isinstance(paths.get("scanned"), list)
+    scanned = len(paths["scanned"]) if known else None
+    skipped = paths.get("skipped", []) if isinstance(paths, dict) else []
+    skipped_count = len(skipped) if isinstance(skipped, list) else 0
+    errors = output.get("errors", [])
+    rules = output.get("skipped_rules", [])
+    error_count = len(errors) if isinstance(errors, list) else 1
+    rule_count = len(rules) if isinstance(rules, list) else 1
+    incomplete = (not known or skipped_count or error_count or rule_count
+                  or not isinstance(skipped, list))
+    if known and scanned == 0:
+        status = "not_run"
+        note = "No source files were checked by the code scanner. Zero findings does not mean the code is safe."
+    elif incomplete:
+        status = "partial"
+        note = "The code check was incomplete. Available findings are retained; unchecked code may contain other issues."
+    else:
+        status = "completed"
+        note = "The code scanner finished checking its selected files. This does not establish coverage of every language or security issue."
+    details = []
+    if scanned is not None:
+        details.append(f"Files checked: {scanned}.")
+    else:
+        details.append("The scanner did not report which files were checked.")
+    if skipped_count:
+        details.append(f"Files skipped: {skipped_count} (including exclusions or unsupported files).")
+    if error_count:
+        details.append(f"Scanner problems: {error_count}; some checks may not have finished.")
+    if rule_count:
+        details.append(f"Rules skipped: {rule_count}.")
+    return status, note + " " + " ".join(details), {
+        "files_scanned": scanned, "files_skipped": skipped_count,
+        "errors_count": error_count, "rules_skipped": rule_count,
+    }
+
+
 def run_semgrep(repository_path: Path):
     """
     Run Semgrep against a repository using the
@@ -70,6 +109,7 @@ def run_semgrep(repository_path: Path):
         "--config",
         str(SEMGREP_RULES_PATH),
         "--json",
+        "--verbose",
         str(repository_path),
     ]
 
@@ -137,6 +177,10 @@ def run_semgrep(repository_path: Path):
             exit_code=result.returncode,
         )
 
+    if not isinstance(semgrep_output, dict) or not isinstance(semgrep_output.get("results"), list):
+        return semgrep_failure("Semgrep produced an invalid analysis result.", exit_code=result.returncode)
+
+    scan_status, coverage_note, coverage = scan_coverage(semgrep_output)
     findings = []
     django_evidence = has_django_evidence(repository_path)
     excluded_framework_matches = 0
@@ -182,7 +226,9 @@ def run_semgrep(repository_path: Path):
 
     return {
         "success": True,
-        "note": (f"{excluded_framework_matches} Django form-rule matches excluded: no Python Django import found in submitted files." if excluded_framework_matches else None),
+        "scan_status": scan_status,
+        "coverage": coverage,
+        "note": coverage_note + (f" {excluded_framework_matches} Django form-rule matches excluded: no Python Django import found in submitted files." if excluded_framework_matches else ""),
         "findings_count": len(findings),
         "findings": findings,
         "error": None,

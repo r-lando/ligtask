@@ -1,5 +1,6 @@
 import json
 import subprocess
+import pytest
 
 from app.services import semgrep_service
 
@@ -32,6 +33,7 @@ def test_run_semgrep_uses_frozen_local_ruleset(
             stdout=json.dumps(
                 {
                     "results": [],
+                    "paths": {"scanned": ["app.js"]},
                 }
             ),
         )
@@ -47,6 +49,7 @@ def test_run_semgrep_uses_frozen_local_ruleset(
     command = captured["command"]
 
     assert result["success"] is True
+    assert result["scan_status"] == "completed"
     assert command[0] == "semgrep"
     assert "--config" in command
 
@@ -194,3 +197,43 @@ def test_invalid_json_returns_controlled_failure(
         result["error"]
         == "Unable to parse Semgrep analysis output."
     )
+
+
+@pytest.mark.parametrize("metadata,status", [
+    ({"paths": {"scanned": ["app.js"]}, "errors": [{"message": "PRIVATE source text"}]}, "partial"),
+    ({"paths": {"scanned": ["app.js"], "skipped": [{"path": "PRIVATE/path"}]}}, "partial"),
+    ({"paths": {"scanned": ["app.js"]}, "skipped_rules": [{"details": "PRIVATE"}]}, "partial"),
+    ({"paths": {"scanned": []}}, "not_run"),
+    ({}, "partial"),
+])
+def test_incomplete_execution_keeps_findings_without_exposing_diagnostics(monkeypatch, tmp_path, metadata, status):
+    output = {"results": [{"check_id": "test-rule", "path": "app.js",
+                          "start": {"line": 1, "col": 1}, "end": {"line": 1, "col": 5},
+                          "extra": {"severity": "ERROR", "message": "Review this code"}}], **metadata}
+    monkeypatch.setattr(semgrep_service.subprocess, "run",
+                        lambda *args, **kwargs: CompletedProcessStub(stdout=json.dumps(output)))
+    result = semgrep_service.run_semgrep(tmp_path)
+    assert result["success"] is True
+    assert result["scan_status"] == status
+    assert result["findings_count"] == 1
+    assert "PRIVATE" not in result["note"]
+    assert "PRIVATE" not in json.dumps(result["coverage"])
+
+
+@pytest.mark.parametrize("output", [[], {"results": None}, {"results": {}}])
+def test_malformed_result_is_a_controlled_failure(monkeypatch, tmp_path, output):
+    monkeypatch.setattr(semgrep_service.subprocess, "run",
+                        lambda *args, **kwargs: CompletedProcessStub(stdout=json.dumps(output)))
+    assert semgrep_service.run_semgrep(tmp_path)["success"] is False
+
+
+def test_real_scanner_reports_parse_errors_and_preserves_other_findings(tmp_path):
+    (tmp_path / "good.js").write_text("function route(req) { db.query('SELECT ' + req.query.id); }", encoding="utf-8")
+    (tmp_path / "broken.js").write_text("function broken( {", encoding="utf-8")
+    (tmp_path / "readme.txt").write_text("Unsupported text control.", encoding="utf-8")
+    result = semgrep_service.run_semgrep(tmp_path)
+    assert result["success"] is True, result.get("error")
+    assert result["scan_status"] == "partial"
+    assert result["coverage"]["errors_count"] > 0
+    assert result["findings_count"] > 0
+    assert "incomplete" in result["note"]
