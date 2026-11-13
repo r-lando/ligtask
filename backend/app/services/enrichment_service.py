@@ -29,6 +29,8 @@ TARGETED_GUIDANCE = {
     },
 }
 TARGETED_RULES = {
+    "semgrep_rules.v1.javascript.express.security.injection.execa-request-command-program": "executable",
+    "semgrep_rules.v1.javascript.express.security.injection.execa-request-shell-command": "shell",
     "semgrep_rules.v1.javascript.express.security.injection.request-to-command-executable": "executable",
     "semgrep_rules.v1.javascript.express.security.injection.angular-route-sqlite-query": "sql",
     "semgrep_rules.v1.javascript.express.security.injection.koa-request-sequelize-query": "sql",

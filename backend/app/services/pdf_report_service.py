@@ -1,7 +1,7 @@
 from io import BytesIO
 from app.services.finding_context import file_context, context_note
 from xml.sax.saxutils import escape
-from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE
+from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE, mechanism_report_status, source_revision_text
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
@@ -321,6 +321,7 @@ def build_metadata_table(
         ],
     ]
 
+    data.append([paragraph("Scanned Git commit", styles["SmallText"]), paragraph(source_revision_text(assessment), styles["SmallText"])])
     table = Table(
         data,
         colWidths=[
@@ -578,11 +579,7 @@ def build_mechanism_status_table(
                     styles["SmallText"],
                 ),
                 paragraph(
-                    format_mechanism_status(
-                        mechanism.get(
-                            "status"
-                        )
-                    ),
+                    mechanism_report_status(key, mechanism),
                     styles["SmallText"],
                 ),
                 paragraph(

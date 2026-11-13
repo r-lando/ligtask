@@ -54,6 +54,18 @@ test('network failure keeps job available for reconnection', async () => {
   assert.equal(api.getPendingJob(), 'job-1')
 })
 
+test('authentication outage preserves job and retry reads it without resubmission', async () => {
+  globalThis.fetch = async () => Response.json({ detail: 'Authentication service is temporarily unavailable.' }, { status: 503 })
+  await assert.rejects(api.waitForAssessment('job-1', () => {}), /temporarily unavailable/)
+  assert.equal(api.getPendingJob(), 'job-1')
+  globalThis.fetch = async (url, options) => {
+    assert.ok(url.endsWith('/assessments/jobs/job-1'))
+    assert.notEqual(options.method, 'POST')
+    return response({ ...queued, status: 'completed', assessment_id: 'saved-result' })
+  }
+  assert.deepEqual(await api.waitForAssessment(api.getPendingJob(), () => {}), { assessment_id: 'saved-result' })
+})
+
 test('failed job exposes its safe error and clears pending state', async () => {
   globalThis.fetch = async () => response({ ...queued, status: 'failed', error: 'Scanner timed out.' })
   await assert.rejects(api.waitForAssessment('job-1', () => {}), /Scanner timed out/)

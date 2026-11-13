@@ -143,8 +143,9 @@ export default function Sidebar({
 
   return (
     <aside
+      className="app-sidebar"
       style={{
-        width: 200,
+        width: 224,
         minHeight: '100vh',
         flexShrink: 0,
         background: 'var(--bg-surface)',
@@ -154,11 +155,12 @@ export default function Sidebar({
         padding: '20px 12px',
       }}
     >
-      <div style={{ paddingBottom: 24, paddingLeft: 8 }}>
+      <div style={{ paddingBottom: 28, paddingLeft: 0 }}>
         <Logo />
       </div>
 
       <nav
+        aria-label="Main navigation"
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -172,6 +174,7 @@ export default function Sidebar({
           return (
             <button
               key={item.label}
+              aria-current={active ? 'page' : undefined}
               onClick={() => navigate(item.screen)}
               style={{
                 display: 'flex',
@@ -184,7 +187,7 @@ export default function Sidebar({
                 background: active
                   ? 'rgba(124, 58, 237, 0.15)'
                   : 'transparent',
-                color: active ? '#a78bfa' : '#64748b',
+                color: active ? '#c4b5fd' : 'var(--text-secondary)',
                 fontSize: 13,
                 fontWeight: active ? 600 : 400,
                 textAlign: 'left',

@@ -1,5 +1,6 @@
 import re
-from urllib.parse import urlparse
+import hashlib
+from urllib.parse import urlparse, quote
 
 import httpx
 
@@ -250,7 +251,7 @@ def get_repository_metadata(
         "default_branch"
     )
 
-    if not default_branch:
+    if not isinstance(default_branch, str) or not default_branch:
         raise GitHubRepositoryError(
             "The repository default branch "
             "could not be determined."
@@ -274,10 +275,26 @@ def get_repository_metadata(
     }
 
 
+def resolve_repository_commit(owner, repository, branch):
+    """Resolve the branch once, then download only that immutable revision."""
+    try:
+        with httpx.Client(timeout=REQUEST_TIMEOUT_SECONDS, follow_redirects=False, headers=github_headers()) as client:
+            response = client.get(f"{GITHUB_API_BASE}/repos/{owner}/{repository}/commits/{quote(branch, safe='')}")
+        if response.status_code != 200:
+            raise GitHubRepositoryError("GitHub repository commit could not be resolved. Please retry later.")
+        data = response.json()
+        sha = data.get("sha") if isinstance(data, dict) else None
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", sha):
+            raise GitHubRepositoryError("GitHub returned an invalid commit identifier.")
+        return sha.lower()
+    except (httpx.RequestError, ValueError) as exc:
+        raise GitHubRepositoryError("Unable to resolve the GitHub repository commit.") from exc
+
+
 def download_repository_archive(
     owner,
     repository,
-    branch,
+    commit_sha,
 ):
     """
     Download a public GitHub repository
@@ -288,10 +305,12 @@ def download_repository_archive(
     bytes for the next temporary processing
     stage and is not persisted here.
     """
+    if not isinstance(commit_sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", commit_sha):
+        raise GitHubRepositoryError("A full Git commit identifier is required for archive download.")
     archive_url = (
         f"{GITHUB_ARCHIVE_BASE}/"
         f"{owner}/{repository}/zip/"
-        f"refs/heads/{branch}"
+        f"{commit_sha}"
     )
 
     chunks = []
@@ -447,11 +466,13 @@ def retrieve_public_repository(
         )
     )
 
+    commit_sha = resolve_repository_commit(metadata["owner"], metadata["repository"], metadata["default_branch"])
+
     archive_bytes = (
         download_repository_archive(
             metadata["owner"],
             metadata["repository"],
-            metadata["default_branch"],
+            commit_sha,
         )
     )
 
@@ -473,4 +494,10 @@ def retrieve_public_repository(
             archive_bytes
         ),
         "archive_bytes": archive_bytes,
+        "source_revision": {
+            "commit_sha": commit_sha,
+            "branch": metadata["default_branch"],
+            "repository_url": parsed["canonical_url"],
+            "archive_sha256": hashlib.sha256(archive_bytes).hexdigest(),
+        },
     }

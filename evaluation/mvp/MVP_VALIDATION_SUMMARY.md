@@ -1,5 +1,8 @@
 # MVP validation checkpoint — 2026-10-19
 
+Latest focused Execa rules and their coverage limits:
+[Execa validation](EXECA_REFINEMENT.md).
+
 Final merge review follow-up: HTML writes using a locally shadowed sanitizer
 declared without an initializer and assigned later now retain their warnings.
 InnerHTML, outerHTML and document.write regression cases were added; the genuine

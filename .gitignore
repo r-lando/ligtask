@@ -25,6 +25,11 @@ tmp/
 
 # Logs
 *.log
+*.err
+logs-*.txt
+
+# Build artifacts
+*.tsbuildinfo
 
 # SQLite database
 *.db
@@ -50,3 +55,4 @@ evaluation/configuration/results/
 
 # Temporary source staged for queued assessments
 backend/assessment_jobs/
+backend/.demo/

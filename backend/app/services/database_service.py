@@ -12,6 +12,7 @@ DATABASE_PATH = (
 )
 
 
+
 def get_connection():
     """
     Create a SQLite connection.
@@ -235,6 +236,9 @@ def initialize_database():
                 ADD COLUMN mechanism_statuses_json TEXT;
                 """
             )
+
+        if "source_revision_json" not in assessment_columns:
+            cursor.execute("ALTER TABLE assessments ADD COLUMN source_revision_json TEXT;")
 
         finding_columns = {
             row["name"]
@@ -468,6 +472,10 @@ def save_assessment(
         )
 
         # -------------------------------------
+        # Save immutable GitHub provenance in the same transaction.
+        cursor.execute("UPDATE assessments SET source_revision_json = ? WHERE id = ?",
+                       (serialize_json(assessment.get("source_revision")), assessment.get("id")))
+
         # Save consolidated findings
         # -------------------------------------
 
@@ -634,6 +642,7 @@ def row_to_assessment(row):
 
     return {
         "assessment_id": row["id"],
+        "source_revision": deserialize_json(row["source_revision_json"]) if "source_revision_json" in row.keys() else None,
         "repository_name": (
             row["repository_name"]
         ),

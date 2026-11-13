@@ -81,7 +81,9 @@ def reserve_job(input_type, input_value, status="queued", user_id=None):
                 raise HTTPException(status_code=429, detail="You already have an active assessment.", headers={"Retry-After": "10"})
             try:
                 daily_limit = int(os.getenv("ASSESSMENTS_PER_DAY", "5"))
-                if daily_limit < 1:
+                # Explicit 0 temporarily disables only the per-user daily quota.
+                # Keep a positive production default and all concurrency caps.
+                if daily_limit < 0:
                     raise ValueError()
             except ValueError as exc:
                 raise HTTPException(status_code=503, detail="Assessment quota is not configured correctly.") from exc
@@ -89,7 +91,7 @@ def reserve_job(input_type, input_value, status="queued", user_id=None):
                 "SELECT COUNT(*) FROM assessment_jobs WHERE user_id = ? AND created_at >= ?",
                 (user_id, now - 86400),
             ).fetchone()[0]
-            if recent >= daily_limit:
+            if daily_limit > 0 and recent >= daily_limit:
                 raise HTTPException(status_code=429, detail="Your daily assessment limit has been reached.")
         pending = connection.execute(
             "SELECT COUNT(*) FROM assessment_jobs WHERE status IN ('uploading', 'queued', 'running')"

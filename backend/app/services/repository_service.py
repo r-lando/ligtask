@@ -538,6 +538,12 @@ def run_assessment_pipeline(
             ),
         }
 
+    elif dependency_scan_status == "skipped":
+        dependency_status = {
+            "status": "skipped", "scanner": "OSV", "findings_count": 0,
+            "error": None, "note": dependency_results.get("note"),
+        }
+
     elif dependency_scan_status == "completed_with_errors":
         dependency_status = {
             "status": "partial",
@@ -849,6 +855,7 @@ def finalize_assessment(
     input_size_bytes,
     extracted_size,
     pipeline_results,
+    source_revision=None,
 ):
     """
     Persist and return a completed or partial
@@ -958,6 +965,7 @@ def finalize_assessment(
 
     assessment_record = {
         "id": assessment_id,
+        "source_revision": source_revision,
 
         "repository_name": (
             repository_name
@@ -1091,6 +1099,7 @@ def finalize_assessment(
         "assessment_id": (
             assessment_id
         ),
+        "source_revision": source_revision,
 
         "repository_name": (
             repository_name
@@ -1499,6 +1508,7 @@ def process_github_repository(
                 ]
             ),
             input_type="GITHUB",
+            source_revision=github_repository.get("source_revision"),
             created_at=created_at,
             start_time=start_time,
             input_size_bytes=(

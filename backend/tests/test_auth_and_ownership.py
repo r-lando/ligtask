@@ -135,6 +135,24 @@ def test_daily_quota_counts_failed_jobs_and_expires_after_24_hours(store, monkey
     assert job_service.reserve_job("GITHUB", "url", user_id=ALICE)
 
 
+def test_zero_daily_quota_allows_testing_but_preserves_active_job_limit(store, monkeypatch):
+    monkeypatch.setenv("ASSESSMENTS_PER_DAY", "0")
+    for _ in range(8):
+        assert job_service.reserve_job("GITHUB", "url", status="completed", user_id=ALICE)
+    assert job_service.reserve_job("GITHUB", "url", user_id=ALICE)
+    with pytest.raises(HTTPException) as exc:
+        job_service.reserve_job("GITHUB", "url", user_id=ALICE)
+    assert exc.value.status_code == 429
+    assert "active assessment" in exc.value.detail
+
+
+def test_negative_daily_quota_remains_invalid(store, monkeypatch):
+    monkeypatch.setenv("ASSESSMENTS_PER_DAY", "-1")
+    with pytest.raises(HTTPException) as exc:
+        job_service.reserve_job("GITHUB", "url", user_id=ALICE)
+    assert exc.value.status_code == 503
+
+
 def test_cookie_mutations_reject_missing_or_untrusted_origin(store):
     client = client_for("alice-token")
     for headers in ({}, {"Origin": "https://attacker.example"}):
@@ -202,6 +220,30 @@ def test_provider_network_errors_do_not_expose_secrets(monkeypatch):
         auth_service.provider_request("GET", "user", token="secret-token")
     assert exc.value.status_code == 503
     assert "secret" not in exc.value.detail
+
+
+@pytest.mark.parametrize("method,fail_status,expected_calls", [
+    ("GET", None, 2), ("GET", 503, 2), ("GET", 401, 1),
+    ("GET", 429, 1), ("POST", None, 1), ("POST", 503, 1),
+])
+def test_provider_retry_is_bounded_and_never_replays_mutations(monkeypatch, method, fail_status, expected_calls):
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_PUBLISHABLE_KEY", "public-key")
+    calls = []
+    def request(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            if fail_status is None:
+                raise httpx.ReadTimeout("private-data")
+            return httpx.Response(fail_status, json={})
+        return httpx.Response(200, json={"id": ALICE})
+    monkeypatch.setattr(httpx.Client, "request", request)
+    if expected_calls == 2:
+        assert auth_service.provider_request(method, "user")["id"] == ALICE
+    else:
+        with pytest.raises(HTTPException):
+            auth_service.provider_request(method, "user")
+    assert len(calls) == expected_calls
 
 
 def test_only_approved_confirmed_emails_can_access_app(store):

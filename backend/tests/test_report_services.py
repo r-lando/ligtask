@@ -6,6 +6,36 @@ from app.services.report_service import (
 )
 
 
+def test_dependency_coverage_label_matches_in_html_and_pdf(monkeypatch):
+    from app.services.pdf_report_service import build_mechanism_status_table, create_styles
+    assessment = make_sample_assessment()
+    mechanism = assessment["mechanism_statuses"]["dependency"]
+    mechanism.update(findings_count=0, note="No software libraries were checked. TALGED currently reads npm package-lock.json files.")
+    monkeypatch.setattr("app.services.report_service.get_assessment_by_id", lambda _: assessment)
+    assert "Not checked" in generate_assessment_html("test")
+    table = build_mechanism_status_table(assessment, create_styles())
+    assert any(cell.getPlainText() == "Not checked" for row in table._cellvalues for cell in row if hasattr(cell, "getPlainText"))
+
+
+def test_coverage_label_does_not_hide_failures_or_assume_zero_is_unchecked():
+    from app.services.report_notes import mechanism_report_status
+    assert mechanism_report_status("dependency", {"status": "completed", "findings_count": 0}) == "Completed"
+    for status in ("failed", "partial"):
+        assert mechanism_report_status("dependency", {"status": status, "note": "No software libraries were checked."}) == status.title()
+
+
+def test_html_commit_provenance_and_legacy_labels_are_escaped(monkeypatch):
+    assessment = make_sample_assessment()
+    assessment["input_type"] = "GITHUB"
+    monkeypatch.setattr("app.services.report_service.get_assessment_by_id", lambda _: assessment)
+    assert "Not recorded (older assessment)" in generate_assessment_html("test")
+    assessment["source_revision"] = {"commit_sha": "a" * 40, "branch": "<script>branch</script>"}
+    html = generate_assessment_html("test")
+    assert "a" * 40 in html
+    assert "&lt;script&gt;branch&lt;/script&gt;" in html
+    assert "<script>branch</script>" not in html
+
+
 def make_sample_assessment(*, status="completed", finding_overrides=None):
     findings = [
         {

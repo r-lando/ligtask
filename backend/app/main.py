@@ -5,6 +5,7 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from fastapi import FastAPI
 from app.api.auth import router as auth_router
+from app.api.recovery import router as recovery_router
 from app.services.auth_service import allowed_origins
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -58,6 +59,7 @@ app.include_router(
     assessments_router
 )
 app.include_router(auth_router)
+app.include_router(recovery_router)
 
 
 @app.get("/")
