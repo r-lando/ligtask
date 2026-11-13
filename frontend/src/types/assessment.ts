@@ -38,6 +38,7 @@ export interface RepositoryProfile {
 }
 
 export interface AssessmentHistoryItem {
+  source_revision?: { commit_sha?: string; branch?: string; repository_url?: string; archive_sha256?: string } | null
   assessment_id: string
   repository_name: string
   input_type: InputType

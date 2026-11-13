@@ -245,3 +245,18 @@ export async function downloadReport(assessmentId: string, format: 'html' | 'pdf
   anchor.remove()
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
+
+
+export async function requestPasswordRecovery(email: string): Promise<{ message: string }> {
+  return parseResponse(await fetch(`${API_BASE_URL}/auth/password-recovery`, {
+    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }))
+}
+
+export async function resetPassword(access_token: string, password: string): Promise<{ message: string }> {
+  return parseResponse(await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_token, password }),
+  }))
+}

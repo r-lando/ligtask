@@ -229,7 +229,7 @@ def test_download_repository_archive_unexpected_content_type(
 
     with pytest.raises(GitHubRepositoryError) as exc_info:
         download_repository_archive(
-            "owner", "repo", "main"
+            "owner", "repo", "a" * 40
         )
 
     assert "unexpected archive content type" in str(

@@ -1,0 +1,17 @@
+{
+  "packet_id": "PKT-talged-logo",
+  "from": "brand-intelligence",
+  "to": "designly-director",
+  "job": "Integrate supplied TALGED logo without changing dashboard functions",
+  "decisions": [
+    {"key": "brand_state", "value": "Original preserved; transparent cutout created using built-in image editing at user request"},
+    {"key": "clearspace", "value": "At least half the visible shield height before adjacent wordmark"},
+    {"key": "palette", "value": "Purple-neutral surfaces; existing severity colors unchanged", "priority": 10}
+  ],
+  "evidence": ["User-supplied 1.png is a purple shield on black", "2.png shows spaced TALGED wordmarks on dark and light backgrounds"],
+  "confidence": 0.85,
+  "hard_vetoes": [],
+  "soft_warnings": ["Original black-background raster preserved; transparent derivative used by the UI", "No formal brand manual supplied"],
+  "unresolved": [],
+  "recommended_next": ["User review of the live branding"]
+}

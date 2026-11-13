@@ -66,8 +66,8 @@ function DetailItem({
     <div>
       <div
         style={{
-          color: '#64748b',
-          fontSize: 9,
+          color: 'var(--text-muted)',
+          fontSize: 12,
           fontWeight: 600,
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
@@ -80,7 +80,7 @@ function DetailItem({
       <div
         style={{
           color: '#cbd5e1',
-          fontSize: 11,
+          fontSize: 12,
           lineHeight: 1.6,
           overflowWrap: 'anywhere',
           fontFamily: mono
@@ -179,7 +179,7 @@ export default function FindingDetailScreen({
       ref={pageRef}
       style={{
         flex: 1,
-        padding: '36px 48px 48px',
+        padding: 'var(--page-padding, 40px 48px)',
         overflowY: 'auto',
       }}
     >
@@ -191,7 +191,7 @@ export default function FindingDetailScreen({
           border: 'none',
           padding: 0,
           marginBottom: 22,
-          color: '#7c3aed',
+          color: 'var(--text-action)',
           cursor: 'pointer',
           fontSize: 12,
           fontWeight: 500,
@@ -221,7 +221,7 @@ export default function FindingDetailScreen({
               borderRadius: 5,
               color,
               background: `${color}18`,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.04em',
             }}
@@ -231,8 +231,8 @@ export default function FindingDetailScreen({
 
           <span
             style={{
-              color: '#7c3aed',
-              fontSize: 10,
+              color: 'var(--text-action)',
+              fontSize: 12,
               fontWeight: 600,
             }}
           >
@@ -241,8 +241,8 @@ export default function FindingDetailScreen({
 
           <span
             style={{
-              color: '#475569',
-              fontSize: 10,
+              color: 'var(--text-muted)',
+              fontSize: 12,
             }}
           >
             {finding.scanner}
@@ -265,10 +265,10 @@ export default function FindingDetailScreen({
 
         <div
           style={{
-            color: '#64748b',
+            color: 'var(--text-muted)',
             fontFamily:
               'JetBrains Mono, monospace',
-            fontSize: 10,
+            fontSize: 12,
             overflowWrap: 'anywhere',
           }}
         >
@@ -281,7 +281,7 @@ export default function FindingDetailScreen({
         style={{
           display: 'grid',
           gridTemplateColumns:
-            'repeat(4, minmax(0, 1fr))',
+            'var(--grid-four, repeat(4, minmax(0, 1fr)))',
           gap: 12,
           marginBottom: 20,
         }}
@@ -363,7 +363,7 @@ export default function FindingDetailScreen({
         style={{
           display: 'grid',
           gridTemplateColumns:
-            '2fr 1fr',
+            'var(--grid-detail, 2fr 1fr)',
           gap: 16,
           alignItems: 'start',
         }}
@@ -375,32 +375,34 @@ export default function FindingDetailScreen({
             gap: 16,
           }}
         >
-          <Section title="Finding Description">
-            <p style={{ color: 'var(--text-secondary, #64748b)', fontSize: 12, lineHeight: 1.7 }}>
-              {findingReview(finding)}
+          <Section title="What was found">
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, maxWidth: '75ch' }}>
+              {finding.description || finding.message || 'No additional description was provided.'}
             </p>
             <p
               style={{
                 margin: 0,
-                color: '#94a3b8',
-                fontSize: 12,
+                color: 'var(--text-secondary)',
+                fontSize: 14,
                 lineHeight: 1.75,
+                maxWidth: '75ch',
+                overflowWrap: 'anywhere',
               }}
             >
-              {finding.description ||
-                finding.message ||
-                'No additional description was provided.'}
+              {findingReview(finding)}
             </p>
           </Section>
 
 
-          <Section title="Recommended Remediation">
+          <Section title="What to check or fix">
             <p
               style={{
                 margin: 0,
                 color: '#cbd5e1',
-                fontSize: 12,
+                fontSize: 14,
                 lineHeight: 1.75,
+                maxWidth: '75ch',
+                overflowWrap: 'anywhere',
               }}
             >
               {finding.recommendation ||
@@ -421,7 +423,7 @@ export default function FindingDetailScreen({
               >
                 <div
                   style={{
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     color: '#4ade80',
                     margin: '0 0 4px',
@@ -429,7 +431,7 @@ export default function FindingDetailScreen({
                     letterSpacing: '0.05em',
                   }}
                 >
-                  Recommended Action
+                  Suggested next step
                 </div>
 
                 <div
@@ -454,8 +456,8 @@ export default function FindingDetailScreen({
                   paddingTop: 12,
                   borderTop:
                     '1px solid var(--border)',
-                  color: '#64748b',
-                  fontSize: 9,
+                  color: 'var(--text-muted)',
+                  fontSize: 12,
                 }}
               >
                 Guidance source:{' '}
@@ -477,12 +479,12 @@ export default function FindingDetailScreen({
           {finding.message &&
             finding.message !==
               finding.description && (
-              <Section title="Scanner Message">
+              <Section title="Original scanner message">
                 <p
                   style={{
                     margin: 0,
                     color: '#94a3b8',
-                    fontSize: 11,
+                    fontSize: 12,
                     lineHeight: 1.7,
                   }}
                 >
@@ -648,8 +650,8 @@ export default function FindingDetailScreen({
             '1px solid rgba(124,58,237,0.15)',
           background:
             'rgba(124,58,237,0.05)',
-          color: '#64748b',
-          fontSize: 10,
+          color: 'var(--text-muted)',
+          fontSize: 12,
           lineHeight: 1.6,
         }}
       >

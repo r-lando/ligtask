@@ -166,7 +166,7 @@ export default function HistoryScreen({
     <div
       style={{
         flex: 1,
-        padding: '40px 48px',
+        padding: 'var(--page-padding, 40px 48px)',
         overflowY: 'auto',
       }}
     >
@@ -176,6 +176,7 @@ export default function HistoryScreen({
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           gap: 20,
+          flexWrap: 'wrap',
           marginBottom: 28,
         }}
       >
@@ -194,7 +195,7 @@ export default function HistoryScreen({
           <p
             style={{
               fontSize: 12,
-              color: '#64748b',
+              color: 'var(--text-muted)',
               margin: 0,
             }}
           >
@@ -214,7 +215,7 @@ export default function HistoryScreen({
             fontSize: 12,
             fontWeight: 600,
             background:
-              'linear-gradient(135deg, #7c3aed, #3b82f6)',
+              'var(--accent-purple)',
           }}
         >
           New Assessment
@@ -273,7 +274,7 @@ export default function HistoryScreen({
 
           <div
             style={{
-              color: '#64748b',
+              color: 'var(--text-muted)',
               fontSize: 12,
               marginBottom: 16,
             }}
@@ -294,7 +295,7 @@ export default function HistoryScreen({
               fontSize: 12,
               fontWeight: 600,
               background:
-                'linear-gradient(135deg, #7c3aed, #3b82f6)',
+                'var(--accent-purple)',
             }}
           >
             Start Assessment
@@ -317,6 +318,7 @@ export default function HistoryScreen({
               <button
                 type="button"
                 key={assessment.assessment_id}
+                className="finding-row"
                 onClick={() =>
                   onOpenAssessment(assessment.assessment_id)
                 }
@@ -378,7 +380,7 @@ export default function HistoryScreen({
                             assessment.input_type === 'GITHUB'
                               ? '#60a5fa'
                               : '#a78bfa',
-                          fontSize: 9,
+                          fontSize: 12,
                           fontWeight: 700,
                           letterSpacing: '0.04em',
                         }}
@@ -399,7 +401,7 @@ export default function HistoryScreen({
                             getAssessmentStatusColor(
                               assessment.status,
                             ),
-                          fontSize: 9,
+                          fontSize: 12,
                           fontWeight: 700,
                           letterSpacing: '0.04em',
                           textTransform: 'uppercase',
@@ -413,8 +415,8 @@ export default function HistoryScreen({
 
                     <div
                       style={{
-                        color: '#64748b',
-                        fontSize: 11,
+                        color: 'var(--text-muted)',
+                        fontSize: 12,
                       }}
                     >
                       {formatDate(assessment.created_at)}
@@ -430,7 +432,7 @@ export default function HistoryScreen({
                     <div
                       style={{
                         color: getSeverityColor(severity),
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: 700,
                         marginBottom: 4,
                       }}
@@ -442,8 +444,8 @@ export default function HistoryScreen({
 
                     <div
                       style={{
-                        color: '#64748b',
-                        fontSize: 10,
+                        color: 'var(--text-muted)',
+                        fontSize: 12,
                       }}
                     >
                       Highest severity
@@ -455,7 +457,7 @@ export default function HistoryScreen({
                   style={{
                     display: 'grid',
                     gridTemplateColumns:
-                      'repeat(4, minmax(0, 1fr))',
+                      'var(--grid-four, repeat(4, minmax(0, 1fr)))',
                     gap: 12,
                     marginTop: 18,
                     paddingTop: 14,
@@ -465,8 +467,8 @@ export default function HistoryScreen({
                   <div>
                     <div
                       style={{
-                        color: '#64748b',
-                        fontSize: 9,
+                        color: 'var(--text-muted)',
+                        fontSize: 12,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: 4,
@@ -489,8 +491,8 @@ export default function HistoryScreen({
                   <div>
                     <div
                       style={{
-                        color: '#64748b',
-                        fontSize: 9,
+                        color: 'var(--text-muted)',
+                        fontSize: 12,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: 4,
@@ -513,8 +515,8 @@ export default function HistoryScreen({
                   <div>
                     <div
                       style={{
-                        color: '#64748b',
-                        fontSize: 9,
+                        color: 'var(--text-muted)',
+                        fontSize: 12,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: 4,
@@ -539,8 +541,8 @@ export default function HistoryScreen({
                   <div>
                     <div
                       style={{
-                        color: '#64748b',
-                        fontSize: 9,
+                        color: 'var(--text-muted)',
+                        fontSize: 12,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: 4,

@@ -187,7 +187,7 @@ function SeverityBadge({
         borderRadius: 5,
         background: `${color}18`,
         color,
-        fontSize: 9,
+        fontSize: 12,
         fontWeight: 700,
         letterSpacing: '0.04em',
       }}
@@ -216,6 +216,7 @@ export default function AssessmentResultsScreen({
     useState<string | null>(null)
 
   const [reportError, setReportError] = useState('')
+  const [retryAttempt, setRetryAttempt] = useState(0)
   const [downloading, setDownloading] = useState(false)
 
   const exportReport = async (format: 'html' | 'pdf') => {
@@ -307,14 +308,14 @@ export default function AssessmentResultsScreen({
     return () => {
       active = false
     }
-  }, [assessmentId])
+  }, [assessmentId, retryAttempt])
 
 
   if (loading) {
     return (
       <div
         style={{
-          padding: '40px 48px',
+          padding: 'var(--page-padding, 40px 48px)',
         }}
       >
         <div
@@ -329,7 +330,7 @@ export default function AssessmentResultsScreen({
             fontSize: 13,
           }}
         >
-          Loading assessment results...
+          <span role="status">Loading assessment results...</span>
         </div>
       </div>
     )
@@ -340,7 +341,7 @@ export default function AssessmentResultsScreen({
     return (
       <div
         style={{
-          padding: '40px 48px',
+          padding: 'var(--page-padding, 40px 48px)',
         }}
       >
         <button
@@ -351,7 +352,7 @@ export default function AssessmentResultsScreen({
           style={{
             background: 'none',
             border: 'none',
-            color: '#7c3aed',
+            color: 'var(--text-action)',
             cursor: 'pointer',
             marginBottom: 20,
           }}
@@ -371,8 +372,16 @@ export default function AssessmentResultsScreen({
             fontSize: 13,
           }}
         >
-          {error ??
-            'Assessment could not be found.'}
+          <div role="alert">
+            <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Could not load these results</h2>
+            <p style={{ margin: '0 0 12px' }}>{error ?? 'Assessment could not be found.'}</p>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              Try loading again. If the assessment is still unavailable, return to your scan history and open it there.
+            </p>
+          </div>
+          <button type="button" style={{ padding: '10px 16px', borderRadius: 8, background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)', cursor: 'pointer' }} onClick={() => setRetryAttempt(value => value + 1)}>
+            Try loading again
+          </button>
         </div>
       </div>
     )
@@ -458,9 +467,10 @@ export default function AssessmentResultsScreen({
   return (
     <div
       ref={pageRef}
+      className="results-page"
       style={{
         flex: 1,
-        padding: '36px 48px 48px',
+        padding: 'var(--page-padding, 40px 48px)',
         overflowY: 'auto',
       }}
     >
@@ -475,7 +485,7 @@ export default function AssessmentResultsScreen({
           gap: 6,
           background: 'none',
           border: 'none',
-          color: '#7c3aed',
+          color: 'var(--text-action)',
           cursor: 'pointer',
           fontSize: 12,
           fontWeight: 500,
@@ -494,6 +504,7 @@ export default function AssessmentResultsScreen({
             'space-between',
           alignItems: 'flex-start',
           gap: 24,
+          flexWrap: 'wrap',
           marginBottom: 24,
         }}
       >
@@ -535,7 +546,7 @@ export default function AssessmentResultsScreen({
 
             <span
               style={{
-                color: '#334155',
+                color: 'var(--text-muted)',
               }}
             >
               •
@@ -543,8 +554,8 @@ export default function AssessmentResultsScreen({
 
             <span
               style={{
-                color: '#64748b',
-                fontSize: 11,
+                color: 'var(--text-muted)',
+                fontSize: 12,
               }}
             >
               {assessment.input_type}
@@ -552,7 +563,7 @@ export default function AssessmentResultsScreen({
 
             <span
               style={{
-                color: '#334155',
+                color: 'var(--text-muted)',
               }}
             >
               •
@@ -560,8 +571,8 @@ export default function AssessmentResultsScreen({
 
             <span
               style={{
-                color: '#64748b',
-                fontSize: 11,
+                color: 'var(--text-muted)',
+                fontSize: 12,
               }}
             >
               {formatDate(
@@ -592,7 +603,7 @@ export default function AssessmentResultsScreen({
               borderRadius: 8,
               padding: '8px 12px',
               cursor: 'pointer',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
             }}
           >
@@ -606,12 +617,12 @@ export default function AssessmentResultsScreen({
             style={{
               border: 'none',
               background:
-                'linear-gradient(135deg, #7c3aed, #3b82f6)',
+                'var(--accent-purple)',
               color: '#ffffff',
               borderRadius: 8,
               padding: '8px 12px',
               cursor: 'pointer',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
             }}
           >
@@ -621,6 +632,14 @@ export default function AssessmentResultsScreen({
       </div>
 
 
+      {assessment.input_type === 'GITHUB' && (
+        <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6, overflowWrap: 'anywhere' }}>
+          Scanned Git commit:{' '}
+          {assessment.source_revision?.commit_sha
+            ? <><code>{assessment.source_revision.commit_sha}</code>{' · Branch: '}{assessment.source_revision.branch || 'Not recorded'}</>
+            : 'Not recorded (older assessment)'}
+        </p>
+      )}
       {reportError && <p role="alert" style={{ color: '#fca5a5' }}>{reportError}</p>}
 
       {assessment.status ===
@@ -650,7 +669,7 @@ export default function AssessmentResultsScreen({
           <div
             style={{
               color: '#cbd5e1',
-              fontSize: 11,
+              fontSize: 12,
               lineHeight: 1.6,
             }}
           >
@@ -670,15 +689,16 @@ export default function AssessmentResultsScreen({
           style={{
             display: 'grid',
             gridTemplateColumns:
-              'repeat(4, minmax(0, 1fr))',
+              'var(--grid-four, repeat(4, minmax(0, 1fr)))',
             gap: 10,
             marginBottom: 24,
           }}
         >
           {mechanismEntries.map(
             ({ key, mechanism }) => {
+              const noCoverage = mechanism.note?.startsWith('No software libraries were checked.') ?? false
               const statusColor =
-                mechanismStatusColor(
+                noCoverage ? '#b6aec8' : mechanismStatusColor(
                   mechanism.status,
                 )
 
@@ -709,7 +729,7 @@ export default function AssessmentResultsScreen({
                     <span
                       style={{
                         color: '#cbd5e1',
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: 700,
                       }}
                     >
@@ -720,11 +740,11 @@ export default function AssessmentResultsScreen({
                     <span
                       style={{
                         color: statusColor,
-                        fontSize: 9,
+                        fontSize: 12,
                         fontWeight: 700,
                       }}
                     >
-                      {mechanismStatusLabel(
+                      {noCoverage ? 'Not checked' : mechanismStatusLabel(
                         mechanism.status,
                       )}
                     </span>
@@ -732,8 +752,8 @@ export default function AssessmentResultsScreen({
 
                   <div
                     style={{
-                      color: '#64748b',
-                      fontSize: 9,
+                      color: 'var(--text-muted)',
+                      fontSize: 12,
                       lineHeight: 1.5,
                     }}
                   >
@@ -748,7 +768,7 @@ export default function AssessmentResultsScreen({
                       style={{
                         marginTop: 7,
                         color: '#fbbf24',
-                        fontSize: 9,
+                        fontSize: 12,
                         lineHeight: 1.45,
                         overflowWrap:
                           'anywhere',
@@ -769,7 +789,7 @@ export default function AssessmentResultsScreen({
         style={{
           display: 'grid',
           gridTemplateColumns:
-            'repeat(4, minmax(0, 1fr))',
+            'var(--grid-four, repeat(4, minmax(0, 1fr)))',
           gap: 12,
           marginBottom: 24,
         }}
@@ -811,8 +831,8 @@ export default function AssessmentResultsScreen({
           >
             <div
               style={{
-                color: '#64748b',
-                fontSize: 9,
+                color: 'var(--text-muted)',
+                fontSize: 12,
                 fontWeight: 600,
                 textTransform:
                   'uppercase',
@@ -858,23 +878,15 @@ export default function AssessmentResultsScreen({
             marginBottom: 14,
           }}
         >
-          <div
-            style={{
-              color: '#94a3b8',
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
+          <div className="chart-heading">
             Severity Distribution
           </div>
 
           {totalFindings > 0 && (
             <div
               style={{
-                color: '#64748b',
-                fontSize: 11,
+                color: 'var(--text-muted)',
+                fontSize: 12,
               }}
             >
               {totalFindings} consolidated finding{totalFindings === 1 ? '' : 's'}
@@ -882,7 +894,9 @@ export default function AssessmentResultsScreen({
           )}
         </div>
 
+        <p className="chart-caption">Select a severity below to filter the findings. Percentages show each severity’s share of the findings.</p>
         <div
+          aria-hidden="true"
           style={{
             height: 8,
             width: '100%',
@@ -899,7 +913,7 @@ export default function AssessmentResultsScreen({
               style={{
                 width: '100%',
                 background:
-                  'rgba(34, 197, 94, 0.25)',
+                  'var(--bg-surface-3)',
               }}
             />
           ) : (
@@ -924,22 +938,12 @@ export default function AssessmentResultsScreen({
                 <div
                   key={sev}
                   title={`${sev}: ${count} (${pct.toFixed(1)}%)`}
-                  onClick={() =>
-                    setSeverityFilter(
-                      severityFilter ===
-                        sev
-                        ? 'ALL'
-                        : sev,
-                    )
-                  }
                   style={{
                     width: `${pct}%`,
                     backgroundColor:
                       severityColor(
                         sev,
                       ),
-                    cursor:
-                      'pointer',
                     transition:
                       'opacity 0.2s ease',
                     opacity:
@@ -957,7 +961,7 @@ export default function AssessmentResultsScreen({
           style={{
             display: 'grid',
             gridTemplateColumns:
-              'repeat(6, minmax(0, 1fr))',
+              'var(--grid-six, repeat(6, minmax(0, 1fr)))',
             gap: 10,
           }}
         >
@@ -984,6 +988,7 @@ export default function AssessmentResultsScreen({
                 <button
                   type="button"
                   key={severity}
+                  aria-pressed={isSelected}
                   className="interactive-card"
                   onClick={() =>
                     setSeverityFilter(
@@ -1042,9 +1047,8 @@ export default function AssessmentResultsScreen({
                       count > 0 && (
                         <span
                           style={{
-                            color:
-                              '#64748b',
-                            fontSize: 10,
+                            color: 'var(--text-muted)',
+                            fontSize: 12,
                             fontWeight: 600,
                           }}
                         >
@@ -1055,14 +1059,14 @@ export default function AssessmentResultsScreen({
 
                   <div
                     style={{
-                      color: '#64748b',
-                      fontSize: 9,
+                      color: 'var(--text-muted)',
+                      fontSize: 12,
                       fontWeight: 600,
                     }}
                   >
                     {severity}
                   </div>
-                  <div style={{ color: 'var(--text-secondary, #64748b)', fontSize: 10, lineHeight: 1.5, marginTop: 6 }}>
+                  <div style={{ color: 'var(--text-secondary, #64748b)', fontSize: 12, lineHeight: 1.5, marginTop: 6 }}>
                     {severityContext(assessment.findings, severity)}
                   </div>
                 </button>
@@ -1077,7 +1081,7 @@ export default function AssessmentResultsScreen({
         style={{
           display: 'grid',
           gridTemplateColumns:
-            'repeat(2, minmax(0, 1fr))',
+            'var(--grid-two, repeat(2, minmax(0, 1fr)))',
           gap: 16,
           marginBottom: 24,
         }}
@@ -1107,7 +1111,7 @@ export default function AssessmentResultsScreen({
             <div
               style={{
                 color: '#94a3b8',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
                 textTransform:
                   'uppercase',
@@ -1119,8 +1123,8 @@ export default function AssessmentResultsScreen({
 
             <span
               style={{
-                color: '#64748b',
-                fontSize: 10,
+                color: 'var(--text-muted)',
+                fontSize: 12,
                 fontWeight: 500,
               }}
             >
@@ -1192,7 +1196,7 @@ export default function AssessmentResultsScreen({
                           alignItems:
                             'center',
                           gap: 5,
-                          fontSize: 10,
+                          fontSize: 12,
                           color: '#cbd5e1',
                         }}
                       >
@@ -1217,7 +1221,7 @@ export default function AssessmentResultsScreen({
                         </span>
                         <span
                           style={{
-                            color: '#64748b',
+                            color: 'var(--text-muted)',
                           }}
                         >
                           {pct}% ({count})
@@ -1231,8 +1235,8 @@ export default function AssessmentResultsScreen({
           ) : (
             <div
               style={{
-                color: '#64748b',
-                fontSize: 11,
+                color: 'var(--text-muted)',
+                fontSize: 12,
               }}
             >
               No recognized language files detected.
@@ -1243,7 +1247,7 @@ export default function AssessmentResultsScreen({
             style={{
               display: 'grid',
               gridTemplateColumns:
-                'repeat(2, minmax(0, 1fr))',
+                'var(--grid-two, repeat(2, minmax(0, 1fr)))',
               gap: 12,
               paddingTop: 12,
               borderTop:
@@ -1253,8 +1257,8 @@ export default function AssessmentResultsScreen({
             <div>
               <div
                 style={{
-                  color: '#64748b',
-                  fontSize: 9,
+                  color: 'var(--text-muted)',
+                  fontSize: 12,
                   fontWeight: 600,
                   textTransform:
                     'uppercase',
@@ -1296,9 +1300,11 @@ export default function AssessmentResultsScreen({
                           border:
                             '1px solid rgba(59, 130, 246, 0.25)',
                           color: '#93c5fd',
-                          fontSize: 9,
+                          fontSize: 12,
                           fontFamily:
                             'monospace',
+                          overflowWrap: 'anywhere',
+                          minWidth: 0,
                         }}
                       >
                         {file}
@@ -1309,8 +1315,8 @@ export default function AssessmentResultsScreen({
               ) : (
                 <span
                   style={{
-                    color: '#64748b',
-                    fontSize: 10,
+                    color: 'var(--text-muted)',
+                    fontSize: 12,
                   }}
                 >
                   None detected
@@ -1321,8 +1327,8 @@ export default function AssessmentResultsScreen({
             <div>
               <div
                 style={{
-                  color: '#64748b',
-                  fontSize: 9,
+                  color: 'var(--text-muted)',
+                  fontSize: 12,
                   fontWeight: 600,
                   textTransform:
                     'uppercase',
@@ -1364,7 +1370,7 @@ export default function AssessmentResultsScreen({
                           border:
                             '1px solid rgba(168, 85, 247, 0.25)',
                           color: '#d8b4fe',
-                          fontSize: 9,
+                          fontSize: 12,
                           fontFamily:
                             'monospace',
                         }}
@@ -1377,8 +1383,8 @@ export default function AssessmentResultsScreen({
               ) : (
                 <span
                   style={{
-                    color: '#64748b',
-                    fontSize: 10,
+                    color: 'var(--text-muted)',
+                    fontSize: 12,
                   }}
                 >
                   None detected
@@ -1414,7 +1420,7 @@ export default function AssessmentResultsScreen({
             <div
               style={{
                 color: '#94a3b8',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
                 textTransform:
                   'uppercase',
@@ -1435,7 +1441,7 @@ export default function AssessmentResultsScreen({
                       '1px solid rgba(52, 211, 153, 0.25)',
                     padding: '2px 8px',
                     borderRadius: 12,
-                    fontSize: 9,
+                    fontSize: 12,
                     fontWeight: 700,
                   }}
                 >
@@ -1468,7 +1474,7 @@ export default function AssessmentResultsScreen({
               <div
                 style={{
                   color: '#94a3b8',
-                  fontSize: 9,
+                  fontSize: 12,
                   textTransform:
                     'uppercase',
                   marginBottom: 2,
@@ -1490,7 +1496,7 @@ export default function AssessmentResultsScreen({
 
             <span
               style={{
-                color: '#64748b',
+                color: 'var(--text-muted)',
                 fontSize: 14,
               }}
             >
@@ -1506,7 +1512,7 @@ export default function AssessmentResultsScreen({
               <div
                 style={{
                   color: '#a78bfa',
-                  fontSize: 9,
+                  fontSize: 12,
                   textTransform:
                     'uppercase',
                   marginBottom: 2,
@@ -1518,7 +1524,7 @@ export default function AssessmentResultsScreen({
               <div
                 style={{
                   color: '#cbd5e1',
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: 600,
                 }}
               >
@@ -1537,7 +1543,7 @@ export default function AssessmentResultsScreen({
 
             <span
               style={{
-                color: '#64748b',
+                color: 'var(--text-muted)',
                 fontSize: 14,
               }}
             >
@@ -1553,7 +1559,7 @@ export default function AssessmentResultsScreen({
               <div
                 style={{
                   color: '#38bdf8',
-                  fontSize: 9,
+                  fontSize: 12,
                   textTransform:
                     'uppercase',
                   marginBottom: 2,
@@ -1577,8 +1583,8 @@ export default function AssessmentResultsScreen({
           <div>
             <div
               style={{
-                color: '#64748b',
-                fontSize: 9,
+                color: 'var(--text-muted)',
+                fontSize: 12,
                 fontWeight: 600,
                 textTransform:
                   'uppercase',
@@ -1608,12 +1614,12 @@ export default function AssessmentResultsScreen({
 
                   const barColor =
                     key === 'sast'
-                      ? '#7c3aed'
+                      ? 'var(--chart-primary)'
                       : key === 'dependency'
-                        ? '#3b82f6'
+                        ? 'var(--chart-secondary)'
                         : key === 'secret'
-                          ? '#f59e0b'
-                          : '#10b981'
+                          ? 'var(--chart-tertiary)'
+                          : 'var(--chart-quaternary)'
 
                   return (
                     <div
@@ -1623,12 +1629,12 @@ export default function AssessmentResultsScreen({
                         alignItems:
                           'center',
                         gap: 8,
-                        fontSize: 10,
+                        fontSize: 12,
                       }}
                     >
                       <span
                         style={{
-                          width: 84,
+                          width: 100,
                           color: '#cbd5e1',
                           fontWeight: 600,
                           flexShrink: 0,
@@ -1642,7 +1648,7 @@ export default function AssessmentResultsScreen({
                       <div
                         style={{
                           flex: 1,
-                          height: 6,
+                          height: 8,
                           borderRadius: 3,
                           background:
                             'rgba(255, 255, 255, 0.06)',
@@ -1671,7 +1677,7 @@ export default function AssessmentResultsScreen({
                           color: '#94a3b8',
                           fontFamily:
                             'monospace',
-                          fontSize: 10,
+                          fontSize: 12,
                           flexShrink: 0,
                         }}
                       >
@@ -1714,15 +1720,15 @@ export default function AssessmentResultsScreen({
           >
             Security Findings
           </h2>
-          <p style={{ color: '#64748b', fontSize: 11 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 11 }}>
             {Object.entries(assessment.context_summary ?? {}).map(([label, count]) => `${contextLabel(label)}: ${count}`).join(' · ')}
             {' — These are possible issues to review, not a score of how secure your app is. Test files are included. File groups are based on names and folders and may be wrong. No findings does not guarantee your app is safe.'}
           </p>
 
           <div
             style={{
-              color: '#64748b',
-              fontSize: 10,
+              color: 'var(--text-muted)',
+              fontSize: 12,
             }}
           >
             Showing{' '}
@@ -1743,9 +1749,9 @@ export default function AssessmentResultsScreen({
             style={{
               background: 'none',
               border: 'none',
-              color: '#7c3aed',
+              color: 'var(--text-action)',
               cursor: 'pointer',
-              fontSize: 11,
+              fontSize: 12,
             }}
           >
             Clear severity filter
@@ -1765,7 +1771,7 @@ export default function AssessmentResultsScreen({
             border:
               '1px solid var(--border)',
             textAlign: 'center',
-            color: '#64748b',
+            color: 'var(--text-muted)',
             fontSize: 12,
           }}
         >
@@ -1785,7 +1791,7 @@ export default function AssessmentResultsScreen({
               <button
                 type="button"
                 key={finding.id}
-                className="interactive-card"
+                className="finding-row"
                 onClick={() =>
                   onOpenFinding(
                     finding,
@@ -1840,7 +1846,8 @@ export default function AssessmentResultsScreen({
                         style={{
                           color:
                             '#e2e8f0',
-                          fontSize: 12,
+                          fontSize: 14,
+                          lineHeight: 1.5,
                           fontWeight:
                             600,
                         }}
@@ -1853,8 +1860,8 @@ export default function AssessmentResultsScreen({
                       <span
                         style={{
                           color:
-                            '#475569',
-                          fontSize: 9,
+                            'var(--text-muted)',
+                          fontSize: 12,
                           flexShrink: 0,
                         }}
                       >
@@ -1879,8 +1886,8 @@ export default function AssessmentResultsScreen({
                       <span
                         style={{
                           color:
-                            '#7c3aed',
-                          fontSize: 9,
+                            'var(--text-action)',
+                          fontSize: 12,
                           fontWeight:
                             600,
                         }}
@@ -1892,8 +1899,7 @@ export default function AssessmentResultsScreen({
 
                       <span
                         style={{
-                          color:
-                            '#334155',
+                          color: 'var(--text-muted)',
                         }}
                       >
                         •
@@ -1901,9 +1907,8 @@ export default function AssessmentResultsScreen({
 
                       <span
                         style={{
-                          color:
-                            '#64748b',
-                          fontSize: 9,
+                          color: 'var(--text-muted)',
+                          fontSize: 12,
                           fontFamily:
                             'monospace',
                         }}
@@ -1923,8 +1928,7 @@ export default function AssessmentResultsScreen({
                         <>
                           <span
                             style={{
-                              color:
-                                '#334155',
+                              color: 'var(--text-muted)',
                             }}
                           >
                             •
@@ -1934,7 +1938,7 @@ export default function AssessmentResultsScreen({
                             style={{
                               color:
                                 '#94a3b8',
-                              fontSize: 9,
+                              fontSize: 12,
                             }}
                           >
                             CVSS{' '}
@@ -1950,8 +1954,7 @@ export default function AssessmentResultsScreen({
                         <>
                           <span
                             style={{
-                              color:
-                                '#334155',
+                              color: 'var(--text-muted)',
                             }}
                           >
                             •
@@ -1961,7 +1964,7 @@ export default function AssessmentResultsScreen({
                             style={{
                               color:
                                 '#60a5fa',
-                              fontSize: 9,
+                              fontSize: 12,
                             }}
                           >
                             {finding.category === 'DEPENDENCY' ? 'Grouped · ' : 'Correlated · '}
@@ -1977,7 +1980,7 @@ export default function AssessmentResultsScreen({
 
                   <span
                     style={{
-                      color: '#475569',
+                      color: 'var(--text-muted)',
                       fontSize: 16,
                       paddingTop: 1,
                     }}
@@ -2001,8 +2004,8 @@ export default function AssessmentResultsScreen({
             '1px solid rgba(124,58,237,0.15)',
           background:
             'rgba(124,58,237,0.05)',
-          color: '#64748b',
-          fontSize: 10,
+          color: 'var(--text-muted)',
+          fontSize: 12,
           lineHeight: 1.6,
         }}
       >

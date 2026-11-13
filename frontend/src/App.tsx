@@ -147,8 +147,8 @@ function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
   ]
 
   return (
-    <div style={{ display: 'flex', flex: 1, minHeight: '100vh' }}>
-      <div style={{ flex: 1, padding: '48px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: 560 }}>
+    <div className="home-layout" style={{ display: 'flex', flex: 1, minHeight: '100vh' }}>
+      <div style={{ flex: 1, padding: 'var(--page-padding, 48px 56px)', display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: 560 }}>
         <h1 style={{
           fontSize: 42, fontWeight: 800, lineHeight: 1.15,
           color: '#e2e8f0', margin: '0 0 8px',
@@ -163,7 +163,7 @@ function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
         }}>
           TALGED
         </h2>
-        <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, margin: '0 0 40px', maxWidth: 420 }}>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7, margin: '0 0 40px', maxWidth: 420 }}>
           TALGED is a security assessment platform for web application repositories that uses rule-based static code analysis to identify potential vulnerabilities in your web application repositories.
         </p>
 
@@ -179,7 +179,7 @@ function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>{f.title}</div>
-                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>{f.desc}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>{f.desc}</div>
               </div>
             </div>
           ))}
@@ -192,7 +192,7 @@ function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
           </svg>
         </Button>
 
-        <p style={{ marginTop: 16, fontSize: 12, color: '#334155' }}>
+        <p style={{ marginTop: 16, fontSize: 12, color: 'var(--text-muted)' }}>
           Begin by submitting your repository for assessment.
         </p>
       </div>
@@ -250,26 +250,8 @@ function AboutScreen({ navigate }: { navigate: (s: Screen) => void }) {
     },
   ]
 
-  const contactLinks = [
-    {
-      label: 'GITHUB',
-      value: 'github.com/r-lando',
-      href: 'https://github.com/r-lando',
-    },
-    {
-      label: 'LINKEDIN',
-      value: 'in/rolando-vinas',
-      href: 'https://linkedin.com/in/rolando-vinas',
-    },
-    {
-      label: 'EMAIL',
-      value: 'rolandovinas25@gmail.com',
-      href: 'mailto:rolandovinas25@gmail.com',
-    },
-  ]
-
   return (
-    <div style={{ flex: 1, padding: '48px 56px', overflowY: 'auto' }}>
+    <div style={{ flex: 1, padding: 'var(--page-padding, 48px 56px)', overflowY: 'auto' }}>
       <div style={{ maxWidth: 720 }}>
         <h1 style={{
           fontSize: 28, fontWeight: 800, color: '#e2e8f0',
@@ -277,7 +259,7 @@ function AboutScreen({ navigate }: { navigate: (s: Screen) => void }) {
         }}>
           About
         </h1>
-        <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, margin: '0 0 32px' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7, margin: '0 0 32px' }}>
           TALGED is a security assessment platform for web application repositories,
           built around rule-based static code analysis.
         </p>
@@ -292,58 +274,6 @@ function AboutScreen({ navigate }: { navigate: (s: Screen) => void }) {
             </div>
           </Card>
         ))}
-
-        <Card style={{ padding: 24, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', marginBottom: 8 }}>
-            Let&rsquo;s work together
-          </div>
-          <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7, marginBottom: 18 }}>
-            For a project, an opportunity, or simply a good technology
-            conversation&mdash;my inbox is open.
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {contactLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                target={
-                  link.label === 'EMAIL'
-                    ? undefined
-                    : '_blank'
-                }
-                rel="noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 12,
-                  textDecoration: 'none',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: '#64748b',
-                    letterSpacing: '0.08em',
-                    minWidth: 74,
-                  }}
-                >
-                  {link.label}
-                </span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: '#a78bfa',
-                  }}
-                >
-                  {link.value}
-                </span>
-              </a>
-            ))}
-          </div>
-        </Card>
 
         <Button onClick={() => navigate('home')} style={{ alignSelf: 'flex-start' }}>
           Back to Home
@@ -374,7 +304,7 @@ function PrivacyScreen({ navigate }: { navigate: (s: Screen) => void }) {
   ]
 
   return (
-    <div style={{ flex: 1, padding: '48px 56px', overflowY: 'auto' }}>
+    <div style={{ flex: 1, padding: 'var(--page-padding, 48px 56px)', overflowY: 'auto' }}>
       <div style={{ maxWidth: 720 }}>
         <h1 style={{
           fontSize: 28, fontWeight: 800, color: '#e2e8f0',
@@ -382,7 +312,7 @@ function PrivacyScreen({ navigate }: { navigate: (s: Screen) => void }) {
         }}>
           Privacy
         </h1>
-        <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, margin: '0 0 32px' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7, margin: '0 0 32px' }}>
           Your code stays yours. Here is how TALGED protects it.
         </p>
 
@@ -516,7 +446,7 @@ function RepositoryScreen({
   }
 
   return (
-    <div style={{ flex: 1, padding: '40px 48px', overflowY: 'auto' }}>
+    <div style={{ flex: 1, padding: 'var(--page-padding, 40px 48px)', overflowY: 'auto' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <button
           onClick={() => navigate('home')}
@@ -527,7 +457,7 @@ function RepositoryScreen({
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: '#64748b',
+            color: 'var(--text-muted)',
             fontSize: 13,
             marginBottom: 24,
             padding: 0,
@@ -561,7 +491,7 @@ function RepositoryScreen({
         <p
           style={{
             fontSize: 13,
-            color: '#64748b',
+            color: 'var(--text-muted)',
             margin: '0 0 36px',
           }}
         >
@@ -597,8 +527,10 @@ function RepositoryScreen({
             </span>
           </div>
 
+          <label htmlFor="repository-url" className="field-label">Public GitHub repository URL</label>
           <input
-            type="text"
+            id="repository-url"
+            type="url"
             placeholder="https://github.com/username/repository"
             value={repoUrl}
             onChange={handleGitHubChange}
@@ -611,7 +543,6 @@ function RepositoryScreen({
               color: '#e2e8f0',
               fontSize: 13,
               fontFamily: "'JetBrains Mono', monospace",
-              outline: 'none',
               boxSizing: 'border-box',
             }}
           />
@@ -619,8 +550,8 @@ function RepositoryScreen({
           <p
             style={{
               margin: '8px 0 0',
-              fontSize: 11,
-              color: '#64748b',
+              fontSize: 12,
+              color: 'var(--text-muted)',
             }}
           >
             Public GitHub repositories are supported. Private repositories are
@@ -631,7 +562,7 @@ function RepositoryScreen({
         <div
           style={{
             textAlign: 'center',
-            fontSize: 11,
+            fontSize: 12,
             color: '#475569',
             margin: '10px 0',
             fontWeight: 600,
@@ -693,6 +624,15 @@ function RepositoryScreen({
           />
 
           <div
+            role="button"
+            tabIndex={0}
+            aria-label={selectedFile ? 'Replace repository ZIP file' : 'Choose repository ZIP file'}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => {
               e.preventDefault()
@@ -768,8 +708,8 @@ function RepositoryScreen({
                 <p
                   style={{
                     margin: 0,
-                    fontSize: 11,
-                    color: '#64748b',
+                    fontSize: 12,
+                    color: 'var(--text-muted)',
                   }}
                 >
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB · Click to
@@ -812,7 +752,7 @@ function RepositoryScreen({
                   style={{
                     margin: 0,
                     fontSize: 12,
-                    color: '#64748b',
+                    color: 'var(--text-muted)',
                   }}
                 >
                   or click to browse
@@ -821,7 +761,7 @@ function RepositoryScreen({
                 <p
                   style={{
                     margin: '8px 0 0',
-                    fontSize: 11,
+                    fontSize: 12,
                     color: '#475569',
                   }}
                 >
@@ -893,7 +833,7 @@ function RepositoryScreen({
               <div
                 style={{
                   fontSize: 12,
-                  color: '#64748b',
+                  color: 'var(--text-muted)',
                   lineHeight: 1.6,
                 }}
               >
@@ -988,7 +928,7 @@ function ScanConfigScreen({
 }) {
   if (!assessmentInput) {
     return (
-      <div style={{ flex: 1, padding: '40px 48px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: 'var(--page-padding, 40px 48px)', overflowY: 'auto' }}>
         <div style={{ maxWidth: 760 }}>
           <h1
             style={{
@@ -1004,7 +944,7 @@ function ScanConfigScreen({
           <p
             style={{
               fontSize: 13,
-              color: '#64748b',
+              color: 'var(--text-muted)',
               margin: '0 0 28px',
             }}
           >
@@ -1041,7 +981,7 @@ function ScanConfigScreen({
     <div
       style={{
         flex: 1,
-        padding: '40px 48px',
+        padding: 'var(--page-padding, 40px 48px)',
         overflowY: 'auto',
       }}
     >
@@ -1055,7 +995,7 @@ function ScanConfigScreen({
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: '#64748b',
+            color: 'var(--text-muted)',
             fontSize: 13,
             marginBottom: 24,
             padding: 0,
@@ -1089,7 +1029,7 @@ function ScanConfigScreen({
         <p
           style={{
             fontSize: 13,
-            color: '#64748b',
+            color: 'var(--text-muted)',
             margin: '0 0 32px',
           }}
         >
@@ -1121,7 +1061,7 @@ function ScanConfigScreen({
               key={label}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '180px minmax(0, 1fr)',
+                gridTemplateColumns: 'var(--grid-summary, 180px minmax(0, 1fr))',
                 gap: 18,
                 alignItems: 'start',
                 paddingBottom:
@@ -1137,7 +1077,7 @@ function ScanConfigScreen({
               <span
                 style={{
                   fontSize: 12,
-                  color: '#64748b',
+                  color: 'var(--text-muted)',
                 }}
               >
                 {label}
@@ -1183,13 +1123,12 @@ function ScanConfigScreen({
           <p
             style={{
               fontSize: 12,
-              color: '#64748b',
+              color: 'var(--text-muted)',
               margin: '0 0 20px',
               lineHeight: 1.6,
             }}
           >
-            These mechanisms form the current TALGED assessment pipeline and
-            run automatically as part of the repository assessment.
+            These mechanisms form the current TALGED assessment pipeline and run automatically as part of the repository assessment.
           </p>
 
           <div
@@ -1229,8 +1168,8 @@ function ScanConfigScreen({
 
                   <div
                     style={{
-                      fontSize: 11,
-                      color: '#64748b',
+                      fontSize: 12,
+                      color: 'var(--text-muted)',
                       lineHeight: 1.5,
                     }}
                   >
@@ -1287,7 +1226,7 @@ function ScanConfigScreen({
               <div
                 style={{
                   fontSize: 12,
-                  color: '#64748b',
+                  color: 'var(--text-muted)',
                   lineHeight: 1.6,
                 }}
               >
@@ -1381,12 +1320,14 @@ function ScanningScreen({
         ? assessmentInput.file.name
         : 'Resuming assessment'
 
+  const reconnecting = Boolean(error && getPendingJob())
+
   if (error) {
     return (
       <div
         style={{
           flex: 1,
-          padding: '40px 48px',
+          padding: 'var(--page-padding, 40px 48px)',
           overflowY: 'auto',
         }}
       >
@@ -1399,17 +1340,19 @@ function ScanningScreen({
               margin: '0 0 6px',
             }}
           >
-            Assessment Failed
+            {reconnecting ? 'Connection interrupted' : 'Assessment Failed'}
           </h1>
 
           <p
             style={{
               fontSize: 13,
-              color: '#64748b',
+              color: 'var(--text-muted)',
               margin: '0 0 28px',
             }}
           >
-            TALGED could not complete the repository assessment.
+            {reconnecting
+              ? 'TALGED could not retrieve the scan status. This does not mean the scan failed. Reconnect to check the existing assessment without submitting it again.'
+              : 'TALGED could not complete the repository assessment.'}
           </p>
 
           <Card
@@ -1457,7 +1400,7 @@ function ScanningScreen({
             </Button>
 
             <Button onClick={onRetry} disabled={!canRetry}>
-              Retry Assessment
+              {reconnecting ? 'Reconnect to assessment' : 'Retry Assessment'}
             </Button>
           </div>
         </div>
@@ -1469,7 +1412,7 @@ function ScanningScreen({
     <div
       style={{
         flex: 1,
-        padding: '40px 48px',
+        padding: 'var(--page-padding, 40px 48px)',
         overflowY: 'auto',
       }}
     >
@@ -1488,7 +1431,7 @@ function ScanningScreen({
         <p
           style={{
             fontSize: 13,
-            color: '#64748b',
+            color: 'var(--text-muted)',
             margin: '0 0 32px',
           }}
         >
@@ -1551,7 +1494,7 @@ function ScanningScreen({
 
                 <div
                   style={{
-                    color: '#64748b',
+                    color: 'var(--text-muted)',
                     fontSize: 12,
                     overflowWrap: 'anywhere',
                   }}
@@ -1567,7 +1510,7 @@ function ScanningScreen({
                 borderRadius: 10,
                 background: 'var(--bg-surface-2)',
                 border: '1px solid var(--border)',
-                color: '#64748b',
+                color: 'var(--text-muted)',
                 fontSize: 12,
                 lineHeight: 1.65,
               }}
@@ -1626,7 +1569,7 @@ function ScanningScreen({
                     <div
                       style={{
                         color: '#475569',
-                        fontSize: 10,
+                        fontSize: 12,
                         lineHeight: 1.45,
                         marginTop: 2,
                       }}
@@ -1654,8 +1597,8 @@ function ScanningScreen({
             >
               <div
                 style={{
-                  fontSize: 11,
-                  color: '#64748b',
+                  fontSize: 12,
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                   fontWeight: 700,
@@ -1679,7 +1622,7 @@ function ScanningScreen({
               <div
                 style={{
                   color: '#475569',
-                  fontSize: 11,
+                  fontSize: 12,
                   marginTop: 8,
                   lineHeight: 1.5,
                 }}
@@ -1708,8 +1651,8 @@ function ScanningScreen({
 
               <div
                 style={{
-                  fontSize: 11,
-                  color: '#64748b',
+                  fontSize: 12,
+                  color: 'var(--text-muted)',
                   lineHeight: 1.6,
                 }}
               >
@@ -1834,6 +1777,7 @@ export default function App() {
 
   return (
     <div
+      className="app-shell"
       style={{
         display: 'flex',
         minHeight: '100vh',
@@ -1846,8 +1790,11 @@ export default function App() {
       />
 
       <main
+        id="main-content"
+        tabIndex={-1}
         style={{
           flex: 1,
+          minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',
@@ -1924,7 +1871,7 @@ export default function App() {
             assessmentId === null && (
               <div
                 style={{
-                  padding: '40px 48px',
+                  padding: 'var(--page-padding, 40px 48px)',
                   color: '#94a3b8',
                 }}
               >

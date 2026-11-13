@@ -1,6 +1,7 @@
 """Supabase Auth verification; provider tokens stay in HttpOnly cookies."""
 
 import os
+import logging
 from dataclasses import dataclass
 from urllib.parse import urlparse
 from uuid import UUID
@@ -10,6 +11,7 @@ from fastapi import HTTPException, Request, Response
 
 ACCESS_COOKIE = "talged_access"
 REFRESH_COOKIE = "talged_refresh"
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -43,7 +45,20 @@ def provider_request(method, path, *, token=None, payload=None):
         headers["Authorization"] = f"Bearer {token}"
     try:
         with httpx.Client(timeout=10, follow_redirects=False) as client:
-            response = client.request(method, f"{url}/auth/v1/{path}", headers=headers, json=payload)
+            # Only idempotent verification reads may be replayed. Never replay
+            # login or rotating refresh tokens after an ambiguous timeout.
+            attempts = 2 if method.upper() == "GET" else 1
+            for attempt in range(attempts):
+                try:
+                    response = client.request(method, f"{url}/auth/v1/{path}", headers=headers, json=payload)
+                except httpx.TransportError as exc:
+                    logger.warning("Authentication upstream transport failure: %s", type(exc).__name__)
+                    if attempt + 1 < attempts:
+                        continue
+                    raise
+                if response.status_code >= 500 and attempt + 1 < attempts:
+                    continue
+                break
         if response.status_code == 429:
             raise HTTPException(status_code=429, detail="Too many sign-in attempts. Please retry later.")
         if response.status_code >= 500:

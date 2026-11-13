@@ -1,6 +1,6 @@
 from html import escape
 from app.services.finding_context import file_context, context_note
-from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE
+from app.services.report_notes import ASSESSMENT_LIMITATION_NOTE, mechanism_report_status, source_revision_text
 
 from app.services.database_service import (
     get_assessment_by_id,
@@ -164,11 +164,7 @@ def build_mechanism_rows(
 
                 <td>
                     {safe_text(
-                        format_mechanism_status(
-                            mechanism.get(
-                                "status"
-                            )
-                        )
+                        mechanism_report_status(key, mechanism)
                     )}
                 </td>
 
@@ -723,6 +719,10 @@ def generate_assessment_html(
             </td>
         </tr>
 
+        <tr>
+            <th>Scanned Git commit</th>
+            <td>{safe_text(source_revision_text(assessment))}</td>
+        </tr>
         <tr>
             <th>Input Type</th>
             <td>
